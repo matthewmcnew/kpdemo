@@ -33,8 +33,10 @@ func main() {
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, 10*time.Hour)
 	imageInformer := informerFactory.Build().V1alpha1().Images()
+	buildInformer := informerFactory.Build().V1alpha1().Builds()
 
-	lister := imageInformer.Lister()
+	imageLister := imageInformer.Lister()
+	buildLister := buildInformer.Lister()
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -42,16 +44,17 @@ func main() {
 	fs := http.FileServer(http.Dir("ui/build"))
 	http.Handle("/", fs)
 
-	http.Handle("/images", &imagesApi{lister})
+	http.Handle("/images", &imagesApi{imageLister: imageLister, buildLister: buildLister})
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 type imagesApi struct {
-	lister v1alpha1.ImageLister
+	imageLister v1alpha1.ImageLister
+	buildLister v1alpha1.BuildLister
 }
 
 func (a *imagesApi) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	images, err := images.Current(a.lister)
+	images, err := images.Current(a.imageLister, a.buildLister)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

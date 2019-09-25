@@ -1,21 +1,58 @@
 import React from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
+import {fetchImages} from "./images";
 
 
 class AppCard extends React.Component {
+    buildMetadata;
+
     render() {
         return (
-            <div className="col-md-2">
-                <div className="card text-white mb-3" className={this.props.Ready ? 'bg-success' : 'bg-danger'}>
+            <div className="col-sm-3 py-2">
+                <div className={`card h-100 ${this.color()}`}>
                     <div className="card-body">
-                        <h5 className="card-title">{this.props.Name}</h5>
-                        <p className="card-text">This will show metadata of pod</p>
+                        <h4 className="card-title">{this.props.name}</h4>
+                        <p className="card-text">Namespace:{this.props.namespace}</p>
+                        <p className="card-text">
+                            {
+                                this.remaining()
+                            }
+
+                            {
+                                this.buildpacks().map((item) =>
+                                    <small>{item.key}:{item.version}<br></br></small>
+                                )
+                            }
+                        </p>
                     </div>
                 </div>
             </div>);
     }
 
+    color() {
+        if (this.props.status === "True") {
+            return "bg-success"
+        } else if (this.props.status === "False") {
+            return "bg-danger"
+        }
+        return "bg-secondary"
+    }
+
+    buildpacks() {
+        if (this.props.buildMetadata == null) {
+            return []
+        }
+        return this.props.buildMetadata
+    }
+
+    remaining() {
+        if (this.props.status === "True") {
+            return ""
+        }
+
+        return this.props.remaining + "/9"
+    }
 }
 
 class AppList extends React.Component {
@@ -38,24 +75,16 @@ class App extends React.Component {
     }
 
     componentDidMount() {
-        setInterval(() => this.callApi()
+        setInterval(() => fetchImages()
             .then(res => this.setState({images: res})).catch(err => console.log(err)), 1000)
     }
-
-    callApi = async () => {
-        const response = await fetch('/images');
-        debugger;
-        const body = await response.json();
-        if (response.status !== 200) throw Error(body.message);
-        console.log(body)
-        return body;
-    };
 
     render() {
         console.log(this.state)
 
         return (
             <div className="container-fluid">
+                <br/>
                 <AppList apps={this.state.images}/>
             </div>
         );
