@@ -16,13 +16,7 @@ class AppCard extends React.Component {
                         <p className="card-text">Namespace:{this.props.namespace}</p>
                         <p className="card-text">
                             {
-                                this.remaining()
-                            }
-
-                            {
-                                this.buildpacks().map((item) =>
-                                    <small>{item.key}:{item.version}<br></br></small>
-                                )
+                                this.description()
                             }
                         </p>
                     </div>
@@ -39,19 +33,22 @@ class AppCard extends React.Component {
         return "bg-secondary"
     }
 
+    description() {
+        if (this.props.status === "True") {
+            return this.buildpacks().map((item) =>
+                <small>{item.key}:{item.version}<br></br></small>
+            )
+        }
+
+        return this.props.remaining + "/9"
+
+    }
+
     buildpacks() {
         if (this.props.buildMetadata == null) {
             return []
         }
         return this.props.buildMetadata
-    }
-
-    remaining() {
-        if (this.props.status === "True") {
-            return ""
-        }
-
-        return this.props.remaining + "/9"
     }
 }
 

@@ -11,13 +11,13 @@ import (
 )
 
 type Image struct {
-	Name       string                         `json:"name"`
-	Namespace  string                         `json:"namespace"`
-	BuildCount int64                          `json:"buildCount"`
-	Status     string                         `json:"status"`
-	Buildpacks v1alpha1.BuildpackMetadataList `json:"buildMetadata"`
-	Remaining  int                            `json:"remaining"`
-	CreatedAt  time.Time                      `json:"createdAt"`
+	Name          string                         `json:"name"`
+	Namespace     string                         `json:"namespace"`
+	BuildCount    int64                          `json:"buildCount"`
+	Status        string                         `json:"status"`
+	BuildMetadata v1alpha1.BuildpackMetadataList `json:"buildMetadata"`
+	Remaining     int                            `json:"remaining"`
+	CreatedAt     time.Time                      `json:"createdAt"`
 }
 
 func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.BuildLister) ([]Image, error) {
@@ -30,13 +30,13 @@ func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.Bui
 	for _, i := range kpackImages {
 
 		images = append(images, Image{
-			Name:       i.Name,
-			Namespace:  i.Namespace,
-			BuildCount: i.Status.BuildCounter,
-			Status:     status(i),
-			CreatedAt:  i.CreationTimestamp.Time,
-			Buildpacks: builddpacks(buildLister, i),
-			Remaining:  remaining(buildLister, i),
+			Name:          i.Name,
+			Namespace:     i.Namespace,
+			BuildCount:    i.Status.BuildCounter,
+			Status:        status(i),
+			CreatedAt:     i.CreationTimestamp.Time,
+			BuildMetadata: builddpacks(buildLister, i),
+			Remaining:     remaining(buildLister, i),
 		})
 	}
 
