@@ -11,8 +11,10 @@ class AppCard extends React.Component {
     render() {
         return (
             <div className="col-sm-3 py-2">
-                <div className={`card h-100 ${this.color()}`}>
-                    <div className="card-body d-flex flex-column ">
+                <div
+                    className={`card h-100 border-right-4 ${this.color()} ${this.danger(this.buildpacks()) ? "border-danger" : ""}`}
+                    style={{borderWidth: "medium"}}>
+                    <div className="card-body d-flex flex-column">
                         <h4>{this.props.name}</h4>
                         <h6>
                             Team:{this.props.namespace}
@@ -20,7 +22,7 @@ class AppCard extends React.Component {
                         <small>
                             {this.buildpacks().map((item, i) =>
                                 <div key={i}
-                                     className={this.danger(item) ? "text-danger font-weight-bold" : ""}>{item.key}:{item.version}<br/>
+                                     className={this.danger([item]) ? "text-danger font-weight-bold" : ""}>{item.key}:{item.version}<br/>
                                 </div>
                             )}
                         </small>
@@ -69,8 +71,14 @@ class AppCard extends React.Component {
         return this.props.buildMetadata
     }
 
-    danger(item) {
-        return item.key === this.props.vulnerable.buildpack && item.version === this.props.vulnerable.version
+    danger(items) {
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].key === this.props.vulnerable.buildpack && items[i].version === this.props.vulnerable.version) {
+                return true
+            }
+
+        }
+        return false
     }
 }
 
