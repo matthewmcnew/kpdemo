@@ -18,6 +18,8 @@ type Image struct {
 	BuildMetadata v1alpha1.BuildpackMetadataList `json:"buildMetadata"`
 	Remaining     int                            `json:"remaining"`
 	CreatedAt     time.Time                      `json:"createdAt"`
+	Tag           string                         `json:"tag"`
+	LatestImage   string                         `json:"latestImage"`
 }
 
 func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.BuildLister) ([]Image, error) {
@@ -31,6 +33,8 @@ func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.Bui
 
 		images = append(images, Image{
 			Name:          i.Name,
+			Tag:           i.Spec.Tag,
+			LatestImage:   i.Status.LatestImage,
 			Namespace:     i.Namespace,
 			BuildCount:    i.Status.BuildCounter,
 			Status:        status(i),
@@ -43,15 +47,29 @@ func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.Bui
 	return images, nil
 }
 
+var cache = map[string]string{}
+
 func builddpacks(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) v1alpha1.BuildpackMetadataList {
 	if image.Status.LatestBuildRef == "" {
 		return nil
 	}
 
-	build, err := buildLister.Builds(image.Namespace).Get(image.Status.LatestBuildRef)
+	buildRef := image.Status.LatestBuildRef
+	key := image.Name + "-" + image.Namespace
+	if image.Status.LatestImage != "" && image.Status.GetCondition(duckv1alpha1.ConditionReady).IsUnknown() {
+		var ok bool
+		buildRef, ok = cache[key]
+		if !ok {
+			return nil
+		}
+	}
+
+	build, err := buildLister.Builds(image.Namespace).Get(buildRef)
 	if err != nil {
 		return nil
 	}
+
+	cache[key] = buildRef
 
 	return build.Status.BuildMetadata
 }
