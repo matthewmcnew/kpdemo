@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import {fetchImages} from "./images";
+import {ConfigModal} from "./Modal";
 
 
 class AppCard extends React.Component {
@@ -18,7 +19,9 @@ class AppCard extends React.Component {
                         </h6>
                         <small>
                             {this.buildpacks().map((item, i) =>
-                                <div key={i}>{item.key}:{item.version}<br/></div>
+                                <div key={i}
+                                     className={this.danger(item) ? "text-danger font-weight-bold" : ""}>{item.key}:{item.version}<br/>
+                                </div>
                             )}
                         </small>
                         {this.spinner()}
@@ -65,13 +68,17 @@ class AppCard extends React.Component {
         }
         return this.props.buildMetadata
     }
+
+    danger(item) {
+        return item.key === this.props.vulnerable.buildpack && item.version === this.props.vulnerable.version
+    }
 }
 
 class AppList extends React.Component {
     render() {
         return (
             <div className="row">
-                {this.props.apps.map((app, i) => <AppCard key={i} {...app}/>)}
+                {this.props.apps.map((app, i) => <AppCard key={i} {...app} vulnerable={this.props.vulnerable}/>)}
             </div>
         );
     }
@@ -82,21 +89,34 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            images: []
+            images: [],
+            vulnerable: {}
         }
     }
 
     componentDidMount() {
         setInterval(() => fetchImages()
-            .then(res => this.setState({images: res})).catch(err => console.log(err)), 1000)
+            .then(res => this.setState({
+                images: res,
+                vulnerable: this.state.vulnerable
+            })).catch(err => console.log(err)), 1000)
     }
 
     render() {
         return (
-            <div className="container-fluid">
-                <br/>
-                <AppList apps={this.state.images}/>
-            </div>
+            <>
+                <div className="container-fluid">
+                    <div className={"row"}>
+                        <ConfigModal
+                            setVulnerable={(vulnerable) => this.setState({
+                                images: this.state.images,
+                                vulnerable: vulnerable
+                            })}
+                            vulnerable={this.state.vulnerable}/>
+                    </div>
+                    <AppList apps={this.state.images} vulnerable={this.state.vulnerable}/>
+                </div>
+            </>
         );
     }
 }
