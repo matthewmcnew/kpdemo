@@ -15,10 +15,10 @@ class AppCard extends React.Component {
                     className={`card h-100 border-right-4 ${this.color()} ${this.danger(this.buildpacks(), this.props.runImage) ? "border-danger" : ""}`}
                     style={{borderWidth: "medium"}}>
                     <div className="card-body d-flex flex-column">
-                        <h4>{this.props.name}</h4>
-                        <h6>
+                        <h5>{this.props.name}</h5>
+                        <div className={"team-name"}>
                             Team:{this.props.namespace}
-                        </h6>
+                        </div>
                         {this.runImage()}
 
                         {this.buildpacks().map((item, i) =>
