@@ -19,8 +19,9 @@ export class ConfigModal extends React.Component {
 
             const buildpack = e.currentTarget.elements['buildpack'].value;
             const version = e.currentTarget.elements['version'].value;
+            const runImage = e.currentTarget.elements['version'].value;
 
-            this.props.setVulnerable({buildpack, version});
+            this.props.setVulnerable({buildpack, version, runImage});
 
             handleClose();
         };
@@ -38,15 +39,27 @@ export class ConfigModal extends React.Component {
                         <Modal.Header closeButton>
                             <Modal.Title>Mark Dependency as Vulnerable</Modal.Title>
                         </Modal.Header>
+
                         <Modal.Body>
                             <Form.Group>
-                                <Form.Label>Buildpack Id</Form.Label>
-                                <Form.Control name="buildpack" type="text" placeholder="Enter buildpack" defaultValue={this.props.vulnerable.buildpack}/>
+                                <Form.Label>Run Image</Form.Label>
+                                <Form.Control name="runImage" type="text" placeholder="Enter Run Image"
+                                              defaultValue={this.props.vulnerable.runImage}/>
+                            </Form.Group>
+                        </Modal.Body>
+
+                        <hr/>
+                        <Modal.Body>
+                            <Form.Group>
+                                <Form.Label>Buildpack ID</Form.Label>
+                                <Form.Control name="buildpack" type="text" placeholder="Enter Buildpack"
+                                              defaultValue={this.props.vulnerable.buildpack}/>
                             </Form.Group>
 
                             <Form.Group>
                                 <Form.Label>Buildpack Version</Form.Label>
-                                <Form.Control name="version" type="text" placeholder="Enter version" defaultValue={this.props.vulnerable.version}/>
+                                <Form.Control name="version" type="text" placeholder="Enter Version"
+                                              defaultValue={this.props.vulnerable.version}/>
                             </Form.Group>
 
                         </Modal.Body>

@@ -12,20 +12,21 @@ class AppCard extends React.Component {
         return (
             <div className="col-sm-3 py-2">
                 <div
-                    className={`card h-100 border-right-4 ${this.color()} ${this.danger(this.buildpacks()) ? "border-danger" : ""}`}
+                    className={`card h-100 border-right-4 ${this.color()} ${this.danger(this.buildpacks(), this.props.runImage) ? "border-danger" : ""}`}
                     style={{borderWidth: "medium"}}>
                     <div className="card-body d-flex flex-column">
                         <h4>{this.props.name}</h4>
                         <h6>
                             Team:{this.props.namespace}
                         </h6>
-                        <small>
-                            {this.buildpacks().map((item, i) =>
-                                <div key={i}
-                                     className={this.danger([item]) ? "text-danger font-weight-bold" : ""}>{item.key}:{item.version}<br/>
-                                </div>
-                            )}
-                        </small>
+                        {this.runImage()}
+
+                        {this.buildpacks().map((item, i) =>
+                            <div key={i}
+                                 className={this.danger([item]) ? "text-danger font-weight-bold vulnerable" : "not-vulnerable"}>{item.key}:{item.version}<br/>
+                            </div>
+                        )}
+
                         {this.spinner()}
                     </div>
                 </div>
@@ -61,7 +62,7 @@ class AppCard extends React.Component {
     }
 
     percent() {
-        return ((this.props.remaining / 9) * 100).toFixed(0) + "%"
+        return ((this.props.completed / this.props.remaining) * 100).toFixed(0) + "%"
     }
 
     buildpacks() {
@@ -71,7 +72,10 @@ class AppCard extends React.Component {
         return this.props.buildMetadata
     }
 
-    danger(items) {
+    danger(items, runImage) {
+        if (runImage !== undefined && runImage.includes(this.props.vulnerable.runImage))
+            return true;
+
         for (let i = 0; i < items.length; i++) {
             if (items[i].key === this.props.vulnerable.buildpack && items[i].version === this.props.vulnerable.version) {
                 return true
@@ -79,6 +83,29 @@ class AppCard extends React.Component {
 
         }
         return false
+    }
+
+    runImage() {
+        if (this.props.runImage === "") {
+            return null
+        }
+
+        const runImageParts = this.props.runImage.replace('index.docker.io/', '').split("@")
+
+        if (2 !== runImageParts.length) {
+            return null
+        }
+
+        const vulnerable = this.props.runImage.includes(this.props.vulnerable.runImage)
+
+        return (
+            <>
+                <div className={vulnerable ? "text-danger font-weight-bold vulnerable" : "not-vulnerable"}>
+                    Stack:{runImageParts[0]} {runImageParts[1].substr(7, 6)}<br/>
+                </div>
+                <div className={"buildpack-divider"}/>
+            </>
+        );
     }
 }
 

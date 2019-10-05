@@ -45,7 +45,7 @@ func main() {
 	http.Handle("/", fs)
 
 	http.Handle("/images", &imagesApi{imageLister: imageLister, buildLister: buildLister})
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }
 
 type imagesApi struct {

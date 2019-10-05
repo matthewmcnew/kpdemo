@@ -20,3 +20,17 @@
 .App-link {
   color: #09d3ac;
 }
+
+.not-vulnerable {
+  font-size: 50%;
+  font-weight: 400;
+}
+
+.vulnerable {
+  font-size: 100%;
+  font-weight: 400;
+}
+
+.buildpack-divider {
+  height:5pt; visibility:hidden;
+}
