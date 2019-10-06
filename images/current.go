@@ -104,11 +104,11 @@ func remaining(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) (
 
 	build, err := buildLister.Builds(image.Namespace).Get(image.Status.LatestBuildRef)
 	if err != nil {
-		return 0, 10
+		return 0, -1
 	}
 
 	if len(build.Status.StepStates) == 0 {
-		return 0, 10
+		return 0, -1
 	}
 
 	return len(build.Status.StepsCompleted), len(build.Status.StepStates)

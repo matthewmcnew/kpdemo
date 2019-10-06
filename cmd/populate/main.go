@@ -101,7 +101,7 @@ func main() {
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 
-	_ = resource.MustParse("100Mi")
+	cache := resource.MustParse("100Mi")
 	for i := 1; i <= c.count; i++ {
 		image, err := client.BuildV1alpha1().Images(namespace).Create(&v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
@@ -122,9 +122,11 @@ func main() {
 						Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
 					},
 				},
-				//CacheSize:            &cache,
-				ImageTaggingStrategy: v1alpha1.None,
-				Build:                v1alpha1.ImageBuild{},
+				CacheSize:                &cache,
+				FailedBuildHistoryLimit:  nil,
+				SuccessBuildHistoryLimit: nil,
+				ImageTaggingStrategy:     v1alpha1.None,
+				Build:                    v1alpha1.ImageBuild{},
 			},
 		})
 		if err != nil && !errors.IsAlreadyExists(err) {
@@ -132,7 +134,7 @@ func main() {
 		}
 
 		log.Printf("created image %s", image.Name)
-		time.Sleep(5 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 
 }

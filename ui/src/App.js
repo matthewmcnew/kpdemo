@@ -62,6 +62,10 @@ class AppCard extends React.Component {
     }
 
     percent() {
+        if (this.props.remaining < 0) {
+            return "Queued"
+        }
+
         return ((this.props.completed / this.props.remaining) * 100).toFixed(0) + "%"
     }
 
@@ -102,7 +106,7 @@ class AppCard extends React.Component {
         return (
             <>
                 <div className={vulnerable ? "text-danger font-weight-bold vulnerable" : "not-vulnerable"}>
-                    Stack:{runImageParts[0]} {runImageParts[1].substr(7, 6)}<br/>
+                    Stack:{runImageParts[0].substring(0, 20)} {runImageParts[1].substr(7, 6)}<br/>
                 </div>
                 <div className={"buildpack-divider"}/>
             </>
