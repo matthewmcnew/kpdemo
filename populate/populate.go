@@ -5,6 +5,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
+	"github.com/matthewmcnew/build-service-visualization/defaults"
 	"github.com/matthewmcnew/build-service-visualization/k8s"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -14,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"log"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -36,17 +38,16 @@ func Populate(count int32, builder, registry string) {
 
 	c := loadConfig(count, registry)
 
-	const namespace = "demo-team"
 	_, err = k8sclient.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
+			Name: defaults.Namespace,
 		},
 	})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		log.Fatalf(err.Error())
 	}
 
-	secret, err := k8sclient.CoreV1().Secrets(namespace).Create(&v1.Secret{
+	secret, err := k8sclient.CoreV1().Secrets(defaults.Namespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "dockersecret",
 			Annotations: map[string]string{
@@ -61,7 +62,7 @@ func Populate(count int32, builder, registry string) {
 	})
 	noError(err)
 
-	serviceAccount, err := k8sclient.CoreV1().ServiceAccounts(namespace).Create(&v1.ServiceAccount{
+	serviceAccount, err := k8sclient.CoreV1().ServiceAccounts(defaults.Namespace).Create(&v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "serviceaccount",
 		},
@@ -73,18 +74,36 @@ func Populate(count int32, builder, registry string) {
 	})
 	noError(err)
 
-	const builderName = "demo-builder"
-	_, err = client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: builderName,
-		},
-		Spec: v1alpha1.BuilderSpec{
-			Image:        builder,
-			UpdatePolicy: v1alpha1.Polling,
-		},
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		log.Fatalf(err.Error())
+	const builderName = defaults.BuilderName
+	clusterBuilder, err := client.BuildV1alpha1().ClusterBuilders().Get(builderName, metav1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		noError(err)
+	}
+
+	if errors.IsNotFound(err) {
+		_, err = client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: builderName,
+			},
+			Spec: v1alpha1.BuilderSpec{
+				Image:        builder,
+				UpdatePolicy: v1alpha1.Polling,
+			},
+		})
+		if err != nil && !errors.IsAlreadyExists(err) {
+			noError(err)
+		}
+	} else {
+		_, err = client.BuildV1alpha1().ClusterBuilders().Update(&v1alpha1.ClusterBuilder{
+			ObjectMeta: clusterBuilder.ObjectMeta,
+			Spec: v1alpha1.BuilderSpec{
+				Image:        builder,
+				UpdatePolicy: v1alpha1.Polling,
+			},
+		})
+		if err != nil && !errors.IsAlreadyExists(err) {
+			noError(err)
+		}
 	}
 
 	seed := time.Now().UTC().UnixNano()
@@ -92,7 +111,8 @@ func Populate(count int32, builder, registry string) {
 
 	cache := resource.MustParse("100Mi")
 	for i := 1; i <= c.count; i++ {
-		image, err := client.BuildV1alpha1().Images(namespace).Create(&v1alpha1.Image{
+
+		image, err := client.BuildV1alpha1().Images(defaults.Namespace).Create(&v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nameGenerator.Generate(),
 			},
@@ -104,22 +124,17 @@ func Populate(count int32, builder, registry string) {
 					},
 					Name: builderName,
 				},
-				ServiceAccount: serviceAccount.Name,
-				Source: v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
-						URL:      "https://github.com/matthewmcnew/sample-java-app",
-						Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
-					},
-				},
-				CacheSize:                &cache,
-				FailedBuildHistoryLimit:  nil,
-				SuccessBuildHistoryLimit: nil,
-				ImageTaggingStrategy:     v1alpha1.None,
-				Build:                    v1alpha1.ImageBuild{},
+				ServiceAccount:       serviceAccount.Name,
+				Source:               randomSourceConfig(),
+				CacheSize:            &cache,
+				ImageTaggingStrategy: v1alpha1.None,
 			},
 		})
 		if err != nil && !errors.IsAlreadyExists(err) {
 			log.Fatalf(err.Error())
+		} else if errors.IsAlreadyExists(err) {
+			i--
+			continue
 		}
 
 		log.Printf("created image %s", image.Name)
@@ -198,4 +213,24 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 		return
 	}
 	return cs[:s], cs[s+1:], true
+}
+
+func randomSourceConfig() v1alpha1.SourceConfig {
+	rand.Seed(time.Now().UnixNano())
+	sourceConfigs := []v1alpha1.SourceConfig{
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/matthewmcnew/sample-java-app", //java
+				Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
+			},
+		},
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/matthewmcnew/build-samples", // node
+				Revision: "a94df327e098fe924b06547a1adf9c3cda5684c9",
+			},
+		},
+	}
+
+	return sourceConfigs[rand.Intn(len(sourceConfigs))]
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/matthewmcnew/build-service-visualization/populate"
+	"github.com/matthewmcnew/build-service-visualization/rebase"
 	"github.com/matthewmcnew/build-service-visualization/relocatebuilder"
 	"github.com/matthewmcnew/build-service-visualization/server"
 	"github.com/spf13/cobra"
@@ -17,20 +18,23 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 func init() {
-	rootCmd.AddCommand(populateCmd())
-	rootCmd.AddCommand(serveCmd())
+	rootCmd.AddCommand(populateCmd(), serveCmd(), updateRunImageCmd(), cleanupCmd())
 }
 
 func populateCmd() *cobra.Command {
 	var registry string
 	var count int32
 	var cmd = &cobra.Command{
-		Use:   "populate",
-		Short: "Populate Build Service with Images",
+		Use:     "populate",
+		Aliases: []string{"setup"},
+		Short:   "Populate Build Service with Images",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("Relocating Builder and Run Image. This will take a moment.")
 
@@ -64,6 +68,31 @@ func serveCmd() *cobra.Command {
 			server.Serve()
 
 			return nil
+		},
+	}
+
+	return cmd
+}
+
+func updateRunImageCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:     "update-run-image",
+		Aliases: []string{"rebase"},
+		Short:   "Demo an update by pushing an updated run image",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return rebase.UpdateRunImage()
+		},
+	}
+
+	return cmd
+}
+
+func cleanupCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "cleanup",
+		Short: "Remove build service demo images",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return populate.Cleanup()
 		},
 	}
 
