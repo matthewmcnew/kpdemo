@@ -12,6 +12,7 @@ require (
 	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
 	github.com/pivotal/kpack v0.0.5-0.20191004212307-142aef7e16b5
 	github.com/pkg/errors v0.8.1
+	github.com/rakyll/statik v0.1.6
 	github.com/spf13/cobra v0.0.5
 	k8s.io/api v0.0.0-20190819141258-3544db3b9e44
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d

@@ -5,6 +5,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
+	"github.com/matthewmcnew/build-service-visualization/k8s"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
@@ -12,16 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 	"log"
 	"strings"
 	"time"
 )
 
 func Populate(count int32, builder, registry string) {
-	clusterConfig, err := BuildConfigFromFlags("", "")
+	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
@@ -200,20 +198,4 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 		return
 	}
 	return cs[:s], cs[s+1:], true
-}
-
-func BuildConfigFromFlags(masterURL, kubeconfigPath string) (*rest.Config, error) {
-
-	var clientConfigLoader clientcmd.ClientConfigLoader
-
-	if kubeconfigPath == "" {
-		clientConfigLoader = clientcmd.NewDefaultClientConfigLoadingRules()
-	} else {
-		clientConfigLoader = &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
-	}
-
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		clientConfigLoader,
-		&clientcmd.ConfigOverrides{ClusterInfo: api.Cluster{Server: masterURL}}).ClientConfig()
-
 }

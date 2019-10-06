@@ -11,6 +11,9 @@
 # production
 /build
 
+/statik
+pbdemo
+
 # misc
 .DS_Store
 .env.local

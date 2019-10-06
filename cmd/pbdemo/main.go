@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/matthewmcnew/build-service-visualization/populate"
 	"github.com/matthewmcnew/build-service-visualization/relocatebuilder"
+	"github.com/matthewmcnew/build-service-visualization/server"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,7 @@ func main() {
 
 func init() {
 	rootCmd.AddCommand(populateCmd())
+	rootCmd.AddCommand(serveCmd())
 }
 
 func populateCmd() *cobra.Command {
@@ -46,6 +48,24 @@ func populateCmd() *cobra.Command {
 
 	cmd.Flags().Int32VarP(&count, "count", "c", 0, "the number of images to populate in build service")
 	_ = cmd.MarkFlagRequired("count")
+
+	return cmd
+}
+
+func serveCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:     "visualization",
+		Aliases: []string{"serve", "ui"},
+		Short:   "Setup a local web server build service visualization ",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Println("Starting Up")
+			fmt.Println("Open up a browser to http://localhost:8081/")
+
+			server.Serve()
+
+			return nil
+		},
+	}
 
 	return cmd
 }
