@@ -19,7 +19,7 @@ export class ConfigModal extends React.Component {
 
             const buildpack = e.currentTarget.elements['buildpack'].value;
             const version = e.currentTarget.elements['version'].value;
-            const runImage = e.currentTarget.elements['version'].value;
+            const runImage = e.currentTarget.elements['runImage'].value;
 
             this.props.setVulnerable({buildpack, version, runImage});
 

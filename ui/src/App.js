@@ -10,7 +10,7 @@ class AppCard extends React.Component {
 
     render() {
         return (
-            <div className="col-sm-3 py-2">
+            <div className="col-sm-2 py-2">
                 <div
                     className={`card h-100 border-right-4 ${this.color()} ${this.danger(this.buildpacks(), this.props.runImage) ? "border-danger" : ""}`}
                     style={{borderWidth: "medium"}}>
@@ -73,8 +73,9 @@ class AppCard extends React.Component {
     }
 
     danger(items, runImage) {
-        if (runImage !== undefined && runImage.includes(this.props.vulnerable.runImage))
+        if (runImage !== undefined && this.props.vulnerable.runImage !== "" && runImage.includes(this.props.vulnerable.runImage)) {
             return true;
+        }
 
         for (let i = 0; i < items.length; i++) {
             if (items[i].key === this.props.vulnerable.buildpack && items[i].version === this.props.vulnerable.version) {
