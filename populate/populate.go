@@ -1,8 +1,7 @@
-package main
+package populate
 
 import (
 	"encoding/base64"
-	"flag"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
@@ -13,24 +12,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 	"log"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 )
 
-var (
-	kubeconfig = flag.String("kubeconfig", "/Users/matthewmcnew/.kube/config", "Path to a kubeconfig. Only required if out-of-cluster.")
-	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	count      = flag.String("count", "20", "number of images to create")
-)
-
-func main() {
-	flag.Parse()
-
-	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+func Populate(count int32, builder, registry string) {
+	clusterConfig, err := BuildConfigFromFlags("", "")
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
@@ -45,7 +36,7 @@ func main() {
 		log.Fatalf("could not get Build client: %s", err)
 	}
 
-	c := loadConfig()
+	c := loadConfig(count, registry)
 
 	const namespace = "demo-team"
 	_, err = k8sclient.CoreV1().Namespaces().Create(&v1.Namespace{
@@ -90,7 +81,7 @@ func main() {
 			Name: builderName,
 		},
 		Spec: v1alpha1.BuilderSpec{
-			Image:        "registry.default.svc.cluster.local:5000/builder",
+			Image:        builder,
 			UpdatePolicy: v1alpha1.Polling,
 		},
 	})
@@ -155,12 +146,7 @@ type config struct {
 	count        int
 }
 
-func loadConfig() config {
-	registry, found := os.LookupEnv("IMAGE_REGISTRY")
-	if !found {
-		log.Fatal("IMAGE_REGISTRY env is needed for population")
-	}
-
+func loadConfig(count int32, registry string) config {
 	imageTag := registryTag(registry)
 
 	reg, err := name.ParseReference(registry, name.WeakValidation)
@@ -183,16 +169,11 @@ func loadConfig() config {
 		log.Fatal("could not parse auth")
 	}
 
-	parsedCount, err := strconv.ParseInt(*count, 10, 64)
-	if err != nil {
-		log.Fatalf("Could not parse cout: %s", *count)
-	}
-
 	return config{
 		testRegistry: registry,
 		username:     username,
 		password:     password,
-		count:        int(parsedCount),
+		count:        int(count),
 		imageTag:     imageTag,
 		registry:     reg.Context().RegistryStr(),
 	}
@@ -219,4 +200,20 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 		return
 	}
 	return cs[:s], cs[s+1:], true
+}
+
+func BuildConfigFromFlags(masterURL, kubeconfigPath string) (*rest.Config, error) {
+
+	var clientConfigLoader clientcmd.ClientConfigLoader
+
+	if kubeconfigPath == "" {
+		clientConfigLoader = clientcmd.NewDefaultClientConfigLoadingRules()
+	} else {
+		clientConfigLoader = &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
+	}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientConfigLoader,
+		&clientcmd.ConfigOverrides{ClusterInfo: api.Cluster{Server: masterURL}}).ClientConfig()
+
 }
