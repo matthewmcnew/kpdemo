@@ -40,3 +40,11 @@
   margin-bottom: 0.5rem;
   margin-top: -0.6rem;
 }
+
+.modal-link {
+  cursor: pointer;
+}
+
+.modal-link:hover {
+  text-decoration: underline;
+}

@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import {fetchImages} from "./images";
+import AppInfo from "./AppInfo";
 import {ConfigModal} from "./Modal";
 
 
@@ -15,10 +16,8 @@ class AppCard extends React.Component {
                     className={`card h-100 border-right-4 ${this.color()} ${this.danger(this.buildpacks(), this.props.runImage) ? "border-danger" : ""}`}
                     style={{borderWidth: "medium"}}>
                     <div className="card-body d-flex flex-column">
-                        <h5>{this.props.name}</h5>
-                        <div className={"team-name"}>
-                            Team:{this.props.namespace}
-                        </div>
+                        <AppInfo {...this.props}/>
+
                         {this.runImage()}
 
                         {this.buildpacks().map((item, i) =>

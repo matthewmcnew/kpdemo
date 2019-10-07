@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"sync"
 	"time"
 )
 
@@ -80,11 +81,14 @@ func lastCompletedBuild(buildLister v1alpha1Listers.BuildLister, image *v1alpha1
 		return nil, err
 	}
 
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
 	cache[key] = buildRef
 
 	return build, nil
 }
 
+var cacheMutex = &sync.Mutex{}
 var cache = map[string]string{}
 
 func remaining(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) (int, int) {
