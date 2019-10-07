@@ -1,4 +1,4 @@
-## Build Service Visualization
+# Build Service Visualization
 
 ![Sample](docs/assets/sample.png)
 
@@ -8,7 +8,7 @@
 - Cluster-admin permissions for the kubernetes cluster with Build Service Installed
 - Accessible Docker V2 Registry
 
-### Setup
+## Setup
 
 1. Download and install the most recent pbdemo [github release](https://github.com/matthewmcnew/build-service-Visualization/releases)
 for your operating system.
@@ -39,7 +39,7 @@ for your operating system.
     
 1. Navigate to the Web UI in your browser to see build service build all the images created in step #3. 
 
-### Demo: Run Image Update
+## Demo: Run Image Update
 
 1. Navigate to the build service web UI and mark the current run image as 'vulnerable'.   
 
@@ -59,7 +59,7 @@ for your operating system.
 
 1. Navigate to the Web UI in your browser to watch build service `rebase` all the images that used the previous run image.
 
-### Demo: JDK Update via Buildpacks 
+## Demo: JDK Update via Buildpacks 
 
 1. Navigate to the build service web UI and mark the current `org.cloudfoundry.openjdk` as 'vulnerable'.   
 
@@ -79,7 +79,7 @@ for your operating system.
 
 1. Navigate to the Web UI in your browser to watch build service `rebuild` all the images that used the previous buildpack.
 
-### Cleanup
+## Cleanup
    
 1. Remove all images created by `pbdemo` with `cleanup`
 
