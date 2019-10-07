@@ -195,7 +195,7 @@ func loadConfig(count int32, registry string) config {
 }
 
 func registryTag(registry string) string {
-	return registry + "/kpack-demo"
+	return registry + "/s1pdemo"
 }
 
 // net/http request.go
