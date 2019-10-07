@@ -13,11 +13,11 @@ export default function AppInfo(props) {
         buildpacks = [];
     }
 
-    let header
+    let header;
     if (props.status === "True") {
-        header = <h5 className={"modal-link"} onClick={handleShow}>{props.name}</h5>
+        header = <h5 className={"modal-link"} onClick={handleShow}>{props.name.substring(0, 25)}</h5>
     } else {
-        header = <h5>{props.name}</h5>
+        header = <h5>{props.name.substring(0, 25)}</h5>
     }
 
     return (
