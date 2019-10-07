@@ -91,9 +91,9 @@ func serveCmd() *cobra.Command {
 
 func updateRunImageCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:     "update-run-image",
-		Aliases: []string{"rebase"},
-		Short:   "Demo an update by pushing an updated run image",
+		Use:     "update-stack",
+		Aliases: []string{"rebase", "update-run-image"},
+		Short:   "Demo an update by pushing an updated stack run image",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return rebase.UpdateRunImage()
 		},

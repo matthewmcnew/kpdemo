@@ -1,11 +1,12 @@
 ## Build Service Visualization
 
+![Sample](docs/assets/sample.png)
+
 #### Prerequisites
 
 - Access to a kubernetes cluster with Build Service Installed
 - Cluster-admin permissions for the kubernetes cluster with Build Service Installed
 - Accessible Docker V2 Registry
-
 
 ### Setup
 
@@ -18,11 +19,11 @@ for your operating system.
     pbdemo visualization
     ```
     
-    >  This should start up a local Build Service visualization web server that you access your in browser. 
+    >  This should start up a local Build Service visualization web server that you access in the browser. 
 
 1. Populate Build Service with sample image configurations.
 
-    The `pbdemo populate` command will relocate builder and run images to a configured registry to enable multiple build service demos.
+    The `pbdemo populate` command will relocate builder and run images to a configured registry to enable build service demos.
     In addition, the command will "seed" an specified number of sample build service image configurations. 
     
     Running `pbdemo populate` will look something like this:
@@ -34,7 +35,7 @@ for your operating system.
     
     - `count`: The number of initial build service image configurations to create.
     
-    >  Warning: The registrtry configured in pbdemo populate must be publicly readable by build service 
+    >  Warning: The registry configured in pbdemo populate must be publicly readable by build service 
     
 1. Navigate to the Web UI in your browser to see build service build all the images created in step #3. 
 
@@ -60,29 +61,28 @@ for your operating system.
 
 ### Demo: JDK Update via Buildpacks 
 
-1. Navigate to the build service web UI and mark the current `` as 'vulnerable'.   
+1. Navigate to the build service web UI and mark the current `org.cloudfoundry.openjdk` as 'vulnerable'.   
 
-    - Copy the current backpack ID & Version for `` from from one of the existing images in the visualization.
+    - Copy the current backpack ID & Version for `org.cloudfoundry.openjdk` from one of the existing images in the visualization.
     - Click on Setup in the top right corner.
     - Paste the Buildpack ID & Version into the Modal.
     - Click Save. 
-    - You should see the images with that that were built with that buildpack highlighted in red.  
+    - You should see the images that were built with that buildpack highlighted in red.  
      
 1. Push an Updated Backpack 
     
-    The `pbdemo update-run-image` will push an updated builder with updated buildpacks to the registry build service is monitoring.
+    The `pbdemo update-buildpacks` will push an updated builder with updated buildpacks to the registry build service is monitoring.
     
     ```
     pbdemo update-buildpacks
     ```   
 
-1. Navigate to the Web UI in your browser to watch build service `rebuild` all the images that used the previous buildpack.  
-  
+1. Navigate to the Web UI in your browser to watch build service `rebuild` all the images that used the previous buildpack.
 
-NiceToHaves
-- Automatic rebases
-- Automatic rebuilds
-- Start up web browser on pb serve
-- Find a random port
-- pbdemo cleanup
-- click on image 
+### Cleanup
+   
+1. Remove all images created by `pbdemo` with `cleanup`
+
+    ```
+    pbdemo cleanup
+    ```  

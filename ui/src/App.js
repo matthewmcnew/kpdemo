@@ -100,7 +100,7 @@ class AppCard extends React.Component {
             return null
         }
 
-        const vulnerable = this.props.runImage.includes(this.props.vulnerable.runImage)
+        const vulnerable = this.danger([], this.props.runImage);
 
         return (
             <>

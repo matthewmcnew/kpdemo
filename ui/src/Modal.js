@@ -42,8 +42,8 @@ export class ConfigModal extends React.Component {
 
                         <Modal.Body>
                             <Form.Group>
-                                <Form.Label>Run Image</Form.Label>
-                                <Form.Control name="runImage" type="text" placeholder="Enter Run Image"
+                                <Form.Label>Stack (Run Image)</Form.Label>
+                                <Form.Control name="runImage" type="text" placeholder="Enter Stack (Run Image)"
                                               defaultValue={this.props.vulnerable.runImage}/>
                             </Form.Group>
                         </Modal.Body>
