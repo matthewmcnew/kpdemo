@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"github.com/matthewmcnew/build-service-visualization/logs"
 	"github.com/matthewmcnew/build-service-visualization/populate"
 	"github.com/matthewmcnew/build-service-visualization/rebase"
 	"github.com/matthewmcnew/build-service-visualization/relocatebuilder"
@@ -25,7 +27,12 @@ func main() {
 }
 
 func init() {
-	rootCmd.AddCommand(populateCmd(), serveCmd(), updateRunImageCmd(), cleanupCmd())
+	rootCmd.AddCommand(populateCmd(),
+		serveCmd(),
+		updateRunImageCmd(),
+		cleanupCmd(),
+		logsCmd(),
+	)
 }
 
 func populateCmd() *cobra.Command {
@@ -57,19 +64,27 @@ func populateCmd() *cobra.Command {
 }
 
 func serveCmd() *cobra.Command {
+	var port string
 	var cmd = &cobra.Command{
 		Use:     "visualization",
 		Aliases: []string{"serve", "ui"},
 		Short:   "Setup a local web server build service visualization ",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Starting Up")
-			fmt.Println("Open up a browser to http://localhost:8081/")
+			go func() {
+				fmt.Println("Starting Up")
+				url := fmt.Sprintf("http://localhost:%s", port)
+				fmt.Printf("Open up a browser to %s\n", url)
 
-			server.Serve()
+				server.OpenBrowser(url)
+			}()
+
+			server.Serve(port)
 
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVarP(&port, "port", "p", "8080", "registry to deploy images into")
 
 	return cmd
 }
@@ -93,6 +108,25 @@ func cleanupCmd() *cobra.Command {
 		Short: "Remove build service demo images",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return populate.Cleanup()
+		},
+	}
+
+	return cmd
+}
+
+func logsCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:     "logs",
+		Short:   "Stream build logs from an image",
+		Example: "pbdemo logs <image-name>",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("no image name provided")
+			}
+
+			image := args[0]
+
+			return logs.Logs(image)
 		},
 	}
 

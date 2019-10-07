@@ -2,6 +2,7 @@ package populate
 
 import (
 	"encoding/base64"
+	"fmt"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
@@ -112,12 +113,13 @@ func Populate(count int32, builder, registry string) {
 	cache := resource.MustParse("100Mi")
 	for i := 1; i <= c.count; i++ {
 
+		sourceConfig, tag := randomSourceConfig()
 		image, err := client.BuildV1alpha1().Images(defaults.Namespace).Create(&v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nameGenerator.Generate(),
 			},
 			Spec: v1alpha1.ImageSpec{
-				Tag: c.imageTag,
+				Tag: fmt.Sprintf("%s:%s", c.imageTag, tag),
 				Builder: v1alpha1.ImageBuilder{
 					TypeMeta: metav1.TypeMeta{
 						Kind: "ClusterBuilder",
@@ -125,7 +127,7 @@ func Populate(count int32, builder, registry string) {
 					Name: builderName,
 				},
 				ServiceAccount:       serviceAccount.Name,
-				Source:               randomSourceConfig(),
+				Source:               sourceConfig,
 				CacheSize:            &cache,
 				ImageTaggingStrategy: v1alpha1.None,
 			},
@@ -215,22 +217,58 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	return cs[:s], cs[s+1:], true
 }
 
-func randomSourceConfig() v1alpha1.SourceConfig {
+func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 	rand.Seed(time.Now().UnixNano())
 	sourceConfigs := []v1alpha1.SourceConfig{
 		{
 			Git: &v1alpha1.Git{
-				URL:      "https://github.com/matthewmcnew/sample-java-app", //java
+				URL:      "https://github.com/matthewmcnew/sample-java-app",
 				Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
 			},
 		},
 		{
 			Git: &v1alpha1.Git{
-				URL:      "https://github.com/matthewmcnew/build-samples", // node
+				URL:      "https://github.com/matthewmcnew/build-samples",
 				Revision: "a94df327e098fe924b06547a1adf9c3cda5684c9",
+			},
+		},
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/cloudfoundry/go-mod-cnb",
+				Revision: "e0c2d2e78fc2a50b98a83b22c71e4898c7bc05cc",
+			},
+			SubPath: "integration/testdata/simple_app",
+		},
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/buildpack/sample-java-app",
+				Revision: "25b3fcb886e8c6589cab9f8d7a7767cf66bff8e2",
+			},
+		},
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/matthewmcnew/sample-java-app",
+				Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
+			},
+		},
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/matthewmcnew/sample-java-app",
+				Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
 			},
 		},
 	}
 
-	return sourceConfigs[rand.Intn(len(sourceConfigs))]
+	imageTypes := []string{
+		"java",
+		"node",
+		"go",
+		"maven",
+		"java",
+		"java",
+	}
+
+	randomIndex := rand.Intn(len(sourceConfigs))
+
+	return sourceConfigs[randomIndex], imageTypes[randomIndex]
 }

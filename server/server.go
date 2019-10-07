@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func Serve() {
+func Serve(port string) {
 	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
@@ -44,7 +44,7 @@ func Serve() {
 	http.Handle("/", http.FileServer(statikFS))
 
 	http.Handle("/images", &imagesApi{imageLister: imageLister, buildLister: buildLister})
-	log.Fatal(http.ListenAndServe(":8081", nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
 type imagesApi struct {
