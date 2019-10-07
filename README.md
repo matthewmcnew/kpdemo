@@ -4,8 +4,8 @@
 
 #### Prerequisites
 
-- Access to a kubernetes cluster with Build Service Installed
-- Cluster-admin permissions for the kubernetes cluster with Build Service Installed
+- Access to a kubernetes cluster with kpack or Build Service Installed
+- Cluster-admin permissions for the kubernetes cluster with kpack or Build Service Installed
 - Accessible Docker V2 Registry
 
 ## Setup
@@ -13,7 +13,7 @@
 1. Download and install the most recent pbdemo [github release](https://github.com/matthewmcnew/build-service-Visualization/releases)
 for your operating system.
 
-1. Start the local server for the build service Web UI
+1. Start the local server for the build service visualization web UI
 
     ```bash
     pbdemo visualization
@@ -39,25 +39,25 @@ for your operating system.
     
 1. Navigate to the Web UI in your browser to see build service build all the images created in step #3. 
 
-## Demo: Run Image Update
+## Demo: Stack Update
 
-1. Navigate to the build service web UI and mark the current run image as 'vulnerable'.   
+1. Navigate to the build service web UI and mark the current stack (run image) as 'vulnerable'.   
 
-    - Copy the truncated Run Image digest from from one of the existing images in the visualization.
+    - Copy the truncated stack digest from from one of the existing images in the visualization.
     - Click on Setup in the top right corner.
-    - Paste the Run Image Digest into the Modal.
+    - Paste the stack (run image) Digest into the Modal.
     - Click Save. 
     - You should see the images with that run image highlighted in red.  
      
-1. Push an updated Run Image
+1. Push an updated stack (Run Image)
     
-    The `pbdemo update-run-image` will push an updated image to the registry build service is monitoring. 
+    The `pbdemo update-stack` will push an updated image to the registry build service is monitoring. 
     
     ```
-    pbdemo update-run-image
+    pbdemo update-stack
     ```   
 
-1. Navigate to the Web UI in your browser to watch build service `rebase` all the images that used the previous run image.
+1. Navigate to the Web UI in your browser to watch build service `rebase` all the images that used the previous stack (run image).
 
 ## Demo: JDK Update via Buildpacks 
 
