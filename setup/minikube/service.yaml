@@ -1,0 +1,28 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry
+spec:
+  ports:
+  - protocol: TCP
+    name: noauth
+    port: 5001
+    targetPort: 5001
+  - protocol: TCP
+    name: auth
+    port: 5000
+    targetPort: 5000
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: registry
+subsets:
+- addresses:
+  - ip: 192.168.64.1
+  ports:
+  - port: 5001
+    name: noauth
+  - port: 5000
+    name: auth
