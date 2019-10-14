@@ -40,16 +40,6 @@ func Relocate(registry string) (Relocated, error) {
 		return Relocated{}, err
 	}
 
-	fixImgUtilBug, err := remote.NewImage(registry+"/s1pdemo", authn.DefaultKeychain, remote.FromBaseImage("cloudfoundry/run:base-cnb"))
-	if err != nil {
-		return Relocated{}, err
-	}
-
-	err = fixImgUtilBug.Save()
-	if err != nil {
-		return Relocated{}, err
-	}
-
 	builderImage := registry + "/builder:pbdemo"
 	builderImg, err := remote.NewImage(builderImage, authn.DefaultKeychain, remote.FromBaseImage("cloudfoundry/cnb:bionic"))
 	if err != nil {
@@ -66,7 +56,7 @@ func Relocate(registry string) (Relocated, error) {
 		return Relocated{}, err
 	}
 
-	var md map[string]interface{} = make(map[string]interface{})
+	var md = map[string]interface{}{}
 	if ok, err := getLabel(builderImg, metadataLabel, &md); err != nil {
 		return Relocated{}, err
 	} else if !ok {
