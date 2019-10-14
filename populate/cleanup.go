@@ -27,7 +27,10 @@ func Cleanup() error {
 	fmt.Printf("Removing %d images\n", len(images.Items))
 
 	for _, i := range images.Items {
-		err := client.BuildV1alpha1().Images(defaults.Namespace).Delete(i.Name, &metav1.DeleteOptions{})
+		deleteBackground := metav1.DeletePropagationBackground
+		err := client.BuildV1alpha1().Images(defaults.Namespace).Delete(i.Name, &metav1.DeleteOptions{
+			PropagationPolicy: &deleteBackground,
+		})
 		if err != nil {
 			return err
 		}
