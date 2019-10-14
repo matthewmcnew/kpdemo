@@ -1,4 +1,4 @@
-package relocatebuilder
+package populate
 
 import (
 	"archive/tar"

@@ -6,7 +6,6 @@ import (
 	"github.com/matthewmcnew/build-service-visualization/logs"
 	"github.com/matthewmcnew/build-service-visualization/populate"
 	"github.com/matthewmcnew/build-service-visualization/rebase"
-	"github.com/matthewmcnew/build-service-visualization/relocatebuilder"
 	"github.com/matthewmcnew/build-service-visualization/server"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +44,7 @@ func populateCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("Relocating Builder and Run Image. This will take a moment.")
 
-			relocated, err := relocatebuilder.Relocate(registry)
+			relocated, err := populate.Relocate(registry)
 			if err != nil {
 				return err
 			}

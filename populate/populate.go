@@ -107,6 +107,8 @@ func Populate(count int32, builder, registry string) {
 		}
 	}
 
+	updatePbBuilder(builder, client)
+
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 
@@ -271,4 +273,29 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 	randomIndex := rand.Intn(len(sourceConfigs))
 
 	return sourceConfigs[randomIndex], imageTypes[randomIndex]
+}
+
+func updatePbBuilder(builderName string, client *versioned.Clientset) {
+	builder, err := client.BuildV1alpha1().Builders("build-service-builds").Get("build-service-builder", metav1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		noError(err)
+	}
+
+	if errors.IsNotFound(err) {
+		return
+	}
+
+	_, err = client.BuildV1alpha1().Builders("build-service-builds").Update(&v1alpha1.Builder{
+		ObjectMeta: builder.ObjectMeta,
+		Spec: v1alpha1.BuilderWithSecretsSpec{
+			BuilderSpec: v1alpha1.BuilderSpec{
+				Image:        builderName,
+				UpdatePolicy: v1alpha1.Polling,
+			},
+		},
+	})
+	if err != nil {
+		noError(err)
+	}
+
 }
