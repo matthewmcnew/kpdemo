@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-func Populate(count int32, builder, registry string) {
+func Populate(count int32, builder, registry, cacheSize string) {
 	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
@@ -91,7 +91,7 @@ func Populate(count int32, builder, registry string) {
 				UpdatePolicy: v1alpha1.Polling,
 			},
 		})
-		if err != nil && !errors.IsAlreadyExists(err) {
+		if err != nil {
 			noError(err)
 		}
 	} else {
@@ -112,7 +112,10 @@ func Populate(count int32, builder, registry string) {
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 
-	cache := resource.MustParse("100Mi")
+	cache, err := resource.ParseQuantity(cacheSize)
+	if err != nil {
+		log.Fatalf("error parsing cache size %s", cacheSize)
+	}
 	for i := 1; i <= c.count; i++ {
 
 		sourceConfig, tag := randomSourceConfig()
@@ -135,7 +138,7 @@ func Populate(count int32, builder, registry string) {
 			},
 		})
 		if err != nil && !errors.IsAlreadyExists(err) {
-			log.Fatalf(err.Error())
+			noError(err)
 		} else if errors.IsAlreadyExists(err) {
 			i--
 			continue
@@ -197,7 +200,7 @@ func loadConfig(count int32, registry string) config {
 }
 
 func registryTag(registry string) string {
-	return registry + "/s1pdemo"
+	return registry + "/pbdemo"
 }
 
 // net/http request.go

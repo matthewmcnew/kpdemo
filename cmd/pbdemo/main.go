@@ -36,6 +36,7 @@ func init() {
 
 func populateCmd() *cobra.Command {
 	var registry string
+	var cacheSize string
 	var count int32
 	var cmd = &cobra.Command{
 		Use:     "populate",
@@ -49,10 +50,12 @@ func populateCmd() *cobra.Command {
 				return err
 			}
 
-			populate.Populate(count, relocated.BuilderImage, registry)
+			populate.Populate(count, relocated.BuilderImage, registry, cacheSize)
 			return nil
 		},
 	}
+	cmd.Flags().StringVarP(&cacheSize, "cache-size", "s", "500Mi", "the cache size to use for build service images")
+
 	cmd.Flags().StringVarP(&registry, "registry", "r", "", "registry to deploy images into")
 	_ = cmd.MarkFlagRequired("registry")
 

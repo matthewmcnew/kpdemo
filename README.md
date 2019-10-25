@@ -35,6 +35,8 @@ for your operating system.
     
     - `count`: The number of initial build service image configurations to create.
     
+    - (Optional) `cache-size`: The Cache Size for each image's build cache. Example: `--cache-size 100Mi` Default: '500Mi'
+    
     >  Warning: The registry configured in pbdemo populate must be publicly readable by build service 
     
 1. Navigate to the Web UI in your browser to see build service build all the images created in step #3. 

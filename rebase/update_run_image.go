@@ -29,11 +29,11 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	if builder.Status.RunImage == "" {
+	if builder.Status.Stack.RunImage == "" {
 		return errors.New("error parsing builder run image")
 	}
 
-	reference, err := name.ParseReference(builder.Status.RunImage)
+	reference, err := name.ParseReference(builder.Status.Stack.RunImage)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func UpdateRunImage() error {
 	runImage := fmt.Sprintf("%s/%s:pbdemo", reference.Context().RegistryStr(), reference.Context().RepositoryStr())
 	fmt.Printf("Pushing update to: %s\n", runImage)
 
-	image, err := remote.NewImage(runImage, authn.DefaultKeychain, remote.FromBaseImage(builder.Status.RunImage))
+	image, err := remote.NewImage(runImage, authn.DefaultKeychain, remote.FromBaseImage(builder.Status.Stack.RunImage))
 	if err != nil {
 		return err
 	}

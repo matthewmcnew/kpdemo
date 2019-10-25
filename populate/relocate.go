@@ -60,7 +60,7 @@ func Relocate(registry string) (Relocated, error) {
 	if ok, err := getLabel(builderImg, metadataLabel, &md); err != nil {
 		return Relocated{}, err
 	} else if !ok {
-		return Relocated{}, fmt.Errorf("builder %s missing label %s -- try recreating builder", builderImg.Name())
+		return Relocated{}, fmt.Errorf("builder %s missing label %s -- try recreating builder", builderImg.Name(), metadataLabel)
 	}
 
 	stack, ok := md["stack"].(map[string]interface{})

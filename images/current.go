@@ -54,7 +54,7 @@ func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.Bui
 			Completed:     done,
 			Remaining:     remaining,
 			BuildMetadata: lastCompletedBuild.Status.BuildMetadata,
-			RunImage:      lastCompletedBuild.Status.RunImage,
+			RunImage:      lastCompletedBuild.Status.Stack.RunImage,
 		})
 	}
 
