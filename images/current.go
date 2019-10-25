@@ -1,10 +1,10 @@
 package images
 
 import (
-	"errors"
 	"github.com/apex/log"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -64,7 +64,7 @@ func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.Bui
 func lastCompletedBuild(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) (*v1alpha1.Build, error) {
 	buildRef := image.Status.LatestBuildRef
 	if buildRef == "" {
-		return nil, errors.New("build not ready yet :)")
+		return nil, errors.Errorf("build not ready yet :): %s", image.Name)
 	}
 
 	key := image.Name + "-" + image.Namespace
