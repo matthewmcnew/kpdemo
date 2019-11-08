@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-func Populate(count int32, builder, registry, cacheSize string) {
+func Populate(count int32, registry, cacheSize string) {
 	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
@@ -76,38 +76,39 @@ func Populate(count int32, builder, registry, cacheSize string) {
 	noError(err)
 
 	const builderName = defaults.BuilderName
-	clusterBuilder, err := client.BuildV1alpha1().ClusterBuilders().Get(builderName, metav1.GetOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		noError(err)
-	}
+	// clusterBuilder, err := client.BuildV1alpha1().ClusterBuilders().Get(builderName, metav1.GetOptions{})
+	// if err != nil && !errors.IsNotFound(err) {
+	// 	noError(err)
+	// }
+	log.Printf("using builder %s", builderName)
 
-	if errors.IsNotFound(err) {
-		_, err = client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: builderName,
-			},
-			Spec: v1alpha1.BuilderSpec{
-				Image:        builder,
-				UpdatePolicy: v1alpha1.Polling,
-			},
-		})
-		if err != nil {
-			noError(err)
-		}
-	} else {
-		_, err = client.BuildV1alpha1().ClusterBuilders().Update(&v1alpha1.ClusterBuilder{
-			ObjectMeta: clusterBuilder.ObjectMeta,
-			Spec: v1alpha1.BuilderSpec{
-				Image:        builder,
-				UpdatePolicy: v1alpha1.Polling,
-			},
-		})
-		if err != nil && !errors.IsAlreadyExists(err) {
-			noError(err)
-		}
-	}
+	// if errors.IsNotFound(err) {
+	// 	_, err = client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Name: builderName,
+	// 		},
+	// 		Spec: v1alpha1.BuilderSpec{
+	// 			Image:        builder,
+	// 			UpdatePolicy: v1alpha1.Polling,
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		noError(err)
+	// 	}
+	// } else {
+	// 	_, err = client.BuildV1alpha1().ClusterBuilders().Update(&v1alpha1.ClusterBuilder{
+	// 		ObjectMeta: clusterBuilder.ObjectMeta,
+	// 		Spec: v1alpha1.BuilderSpec{
+	// 			Image:        builder,
+	// 			UpdatePolicy: v1alpha1.Polling,
+	// 		},
+	// 	})
+	// 	if err != nil && !errors.IsAlreadyExists(err) {
+	// 		noError(err)
+	// 	}
+	// }
 
-	updatePbBuilder(builder, client)
+	// updatePbBuilder(builder, client)
 
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)

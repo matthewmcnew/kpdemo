@@ -36,5 +36,5 @@ func Cleanup() error {
 		}
 	}
 
-	return client.BuildV1alpha1().ClusterBuilders().Delete(defaults.BuilderName, &metav1.DeleteOptions{})
+	return err
 }

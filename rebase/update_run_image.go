@@ -38,7 +38,7 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	runImage := fmt.Sprintf("%s/%s:pbdemo", reference.Context().RegistryStr(), reference.Context().RepositoryStr())
+	runImage := fmt.Sprintf("%s/%s:full-cnb", reference.Context().RegistryStr(), reference.Context().RepositoryStr())
 	fmt.Printf("Pushing update to: %s\n", runImage)
 
 	image, err := remote.NewImage(runImage, authn.DefaultKeychain, remote.FromBaseImage(builder.Status.Stack.RunImage))
