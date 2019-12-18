@@ -43,12 +43,6 @@ func populateCmd() *cobra.Command {
 		Aliases: []string{"setup"},
 		Short:   "Populate Build Service with Images",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// fmt.Println("Relocating Builder and Run Image. This will take a moment.")
-
-			// relocated, err := populate.Relocate(registry)
-			// if err != nil {
-			// 	return err
-			// }
 			fmt.Println("using existing builder and run image")
 			populate.Populate(count, registry, cacheSize)
 			return nil
