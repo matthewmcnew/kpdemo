@@ -5,14 +5,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/buildpack/imgutil"
-	"github.com/buildpack/imgutil/remote"
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/imgutil"
+	"github.com/buildpacks/imgutil/remote"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/pkg/errors"
 )
 
 const metadataLabel = "io.buildpacks.builder.metadata"

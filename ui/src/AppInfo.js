@@ -36,7 +36,7 @@ export default function AppInfo(props) {
                     <dt>Buildpacks</dt>
                     <dd>
                         {buildpacks.map((item, i) =>
-                            <div key={i}>{item.key}:{item.version}<br/>
+                            <div key={i}>{item.id}:{item.version}<br/>
                             </div>
                         )}
                     </dd>

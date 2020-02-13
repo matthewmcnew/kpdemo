@@ -1,16 +1,17 @@
 package images
 
 import (
+	"sync"
+	"time"
+
 	"github.com/apex/log"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
-	"sync"
-	"time"
 )
 
 type Image struct {
@@ -68,7 +69,7 @@ func lastCompletedBuild(buildLister v1alpha1Listers.BuildLister, image *v1alpha1
 	}
 
 	key := image.Name + "-" + image.Namespace
-	if image.Status.LatestImage != "" && image.Status.GetCondition(duckv1alpha1.ConditionReady).IsUnknown() {
+	if image.Status.LatestImage != "" && image.Status.GetCondition(corev1alpha1.ConditionReady).IsUnknown() {
 		var ok bool
 		buildRef, ok = cache[key]
 		if !ok {
@@ -96,11 +97,11 @@ func remaining(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) (
 		return 0, 10
 	}
 
-	if image.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue() {
+	if image.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
 		return 1, 1
 	}
 
-	if image.Status.GetCondition(duckv1alpha1.ConditionReady).IsFalse() {
+	if image.Status.GetCondition(corev1alpha1.ConditionReady).IsFalse() {
 		return 1, 1
 	}
 
@@ -119,7 +120,7 @@ func remaining(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) (
 }
 
 func status(image *v1alpha1.Image) string {
-	condition := image.Status.GetCondition(duckv1alpha1.ConditionReady)
+	condition := image.Status.GetCondition(corev1alpha1.ConditionReady)
 	if condition == nil {
 		return string(v1.ConditionUnknown)
 	}

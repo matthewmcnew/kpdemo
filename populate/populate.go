@@ -1,13 +1,14 @@
 package populate
 
 import (
-	"encoding/base64"
 	"fmt"
+	"log"
+	"math/rand"
+	"time"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
-	"github.com/matthewmcnew/build-service-visualization/defaults"
-	"github.com/matthewmcnew/build-service-visualization/k8s"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
@@ -15,10 +16,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"log"
-	"math/rand"
-	"strings"
-	"time"
+
+	"github.com/matthewmcnew/build-service-visualization/defaults"
+	"github.com/matthewmcnew/build-service-visualization/k8s"
 )
 
 func Populate(count int32, builder, registry, cacheSize string) {
@@ -50,7 +50,7 @@ func Populate(count int32, builder, registry, cacheSize string) {
 
 	secret, err := k8sclient.CoreV1().Secrets(defaults.Namespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "dockersecret",
+			GenerateName: "pbdemo-dockersecret-",
 			Annotations: map[string]string{
 				"build.pivotal.io/docker": c.registry,
 			},
@@ -65,7 +65,7 @@ func Populate(count int32, builder, registry, cacheSize string) {
 
 	serviceAccount, err := k8sclient.CoreV1().ServiceAccounts(defaults.Namespace).Create(&v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "serviceaccount",
+			GenerateName: "pbdemo-serviceaccount-",
 		},
 		Secrets: []v1.ObjectReference{
 			{
@@ -125,11 +125,9 @@ func Populate(count int32, builder, registry, cacheSize string) {
 			},
 			Spec: v1alpha1.ImageSpec{
 				Tag: fmt.Sprintf("%s:%s", c.imageTag, tag),
-				Builder: v1alpha1.ImageBuilder{
-					TypeMeta: metav1.TypeMeta{
-						Kind: "ClusterBuilder",
-					},
+				Builder: v1.ObjectReference{
 					Name: builderName,
+					Kind: "ClusterBuilder",
 				},
 				ServiceAccount:       serviceAccount.Name,
 				Source:               sourceConfig,
@@ -184,42 +182,23 @@ func loadConfig(count int32, registry string) config {
 		log.Fatalf("Could not get auth for%s", imageTag)
 	}
 
-	username, password, ok := parseBasicAuth(basicAuth)
-	if !ok {
-		log.Fatal("could not parse auth")
-	}
-
 	return config{
 		testRegistry: registry,
-		username:     username,
-		password:     password,
+		username:     basicAuth.Username,
+		password:     basicAuth.Password,
 		count:        int(count),
 		imageTag:     imageTag,
-		registry:     reg.Context().RegistryStr(),
+		registry: func() string {
+			if reg.Context().RegistryStr() == name.DefaultRegistry {
+				return "https://" + name.DefaultRegistry + "/v1/"
+			}
+			return reg.Context().RegistryStr()
+		}(),
 	}
 }
 
 func registryTag(registry string) string {
 	return registry + "/pbdemo"
-}
-
-// net/http request.go
-func parseBasicAuth(auth string) (username, password string, ok bool) {
-	const prefix = "Basic "
-	// Case insensitive prefix match. See Issue 22736.
-	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
-		return
-	}
-	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
-	if err != nil {
-		return
-	}
-	cs := string(c)
-	s := strings.IndexByte(cs, ':')
-	if s < 0 {
-		return
-	}
-	return cs[:s], cs[s+1:], true
 }
 
 func randomSourceConfig() (v1alpha1.SourceConfig, string) {

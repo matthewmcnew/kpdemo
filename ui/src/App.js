@@ -22,7 +22,7 @@ class AppCard extends React.Component {
 
                         {this.buildpacks().map((item, i) =>
                             <div key={i}
-                                 className={this.danger([item]) ? "text-danger font-weight-bold vulnerable" : "not-vulnerable"}>{item.key}:{item.version}<br/>
+                                 className={this.danger([item]) ? "text-danger font-weight-bold vulnerable" : "not-vulnerable"}>{item.id}:{item.version}<br/>
                             </div>
                         )}
 

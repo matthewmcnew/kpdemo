@@ -3,14 +3,16 @@ package rebase
 import (
 	"errors"
 	"fmt"
-	"github.com/buildpack/imgutil/remote"
+	"time"
+
+	"github.com/buildpacks/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/matthewmcnew/build-service-visualization/defaults"
-	"github.com/matthewmcnew/build-service-visualization/k8s"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
+
+	"github.com/matthewmcnew/build-service-visualization/defaults"
+	"github.com/matthewmcnew/build-service-visualization/k8s"
 )
 
 func UpdateRunImage() error {
