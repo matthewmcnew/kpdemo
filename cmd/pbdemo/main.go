@@ -3,11 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/spf13/cobra"
+
 	"github.com/matthewmcnew/build-service-visualization/logs"
 	"github.com/matthewmcnew/build-service-visualization/populate"
 	"github.com/matthewmcnew/build-service-visualization/rebase"
 	"github.com/matthewmcnew/build-service-visualization/server"
-	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
@@ -68,12 +71,14 @@ func populateCmd() *cobra.Command {
 func serveCmd() *cobra.Command {
 	var port string
 	var cmd = &cobra.Command{
-		Use:     "visualization",
-		Aliases: []string{"serve", "ui"},
+		Use:     "serve",
+		Aliases: []string{"visualization", "ui"},
 		Short:   "Setup a local web server build service visualization ",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Println("Starting Up")
 			go func() {
-				fmt.Println("Starting Up")
+				time.Sleep(500 * time.Millisecond)
+
 				url := fmt.Sprintf("http://localhost:%s", port)
 				fmt.Printf("Open up a browser to %s\n", url)
 
