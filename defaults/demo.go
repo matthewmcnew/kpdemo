@@ -1,4 +1,4 @@
 package defaults
 
 const BuilderName = "demo-builder"
-const Namespace = "demo-team"
+const Namespace = "demo-project"
