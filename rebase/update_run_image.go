@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/buildpacks/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/matthewmcnew/build-service-visualization/defaults"
@@ -40,29 +41,33 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	runImage := fmt.Sprintf("%s/%s:pbdemo", reference.Context().RegistryStr(), reference.Context().RepositoryStr())
-	fmt.Printf("Pushing update to: %s\n", runImage)
-
-	image, err := remote.NewImage(runImage, authn.DefaultKeychain, remote.FromBaseImage(builder.Status.Stack.RunImage))
+	updateRef, err := name.ParseReference(fmt.Sprintf("%s/%s:run", reference.Context().RegistryStr(), reference.Context().RepositoryStr()))
 	if err != nil {
 		return err
 	}
 
-	err = image.SetLabel("BUILD_SERVICE_DEMO", time.Now().String())
+	fmt.Printf("Pushing update to: %s\n", updateRef.Name())
+
+	i, err := remote.Image(reference, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return err
 	}
 
-	err = image.Save()
+	i, err = imagehelpers.SetStringLabel(i, "BUILD_SERVICE_DEMO", time.Now().String())
 	if err != nil {
 		return err
 	}
 
-	identifier, err := image.Identifier()
+	err = remote.Write(updateRef, i, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Updated Run Image %s\n", identifier)
+
+	digest, err := i.Digest()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Updated Run Image %s@%s\n", updateRef, digest)
 
 	builder.Annotations = map[string]string{
 		"BUILD_SERVICE_DEMO": time.Now().String(),

@@ -3,16 +3,20 @@ package populate
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/json"
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/imgutil"
-	"github.com/buildpacks/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pkg/errors"
 )
 
@@ -30,38 +34,49 @@ func Relocate(registry string) (Relocated, error) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	runImage := registry + "/run:pbdemo"
-	runImg, err := remote.NewImage(runImage, authn.DefaultKeychain, remote.FromBaseImage("cloudfoundry/run:base-cnb"))
+	runRef, err := name.ParseReference("cloudfoundry/run:base-cnb")
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	err = runImg.Save()
+	run, err := remote.Image(runRef, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	builderImage := registry + "/builder:pbdemo"
-	builderImg, err := remote.NewImage(builderImage, authn.DefaultKeychain, remote.FromBaseImage("cloudfoundry/cnb:bionic"))
+	relocatedRunRef, err := name.ParseReference(registry + "/pbdemo:run")
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	layer, err := stackLayer(tmpDir, runImage)
+	_, err = save(relocatedRunRef, run)
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	err = builderImg.AddLayer(layer)
+	builderRef, err := name.ParseReference("cloudfoundry/cnb:bionic")
+	if err != nil {
+		return Relocated{}, err
+	}
+
+	builder, err := remote.Image(builderRef, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err != nil {
+		return Relocated{}, err
+	}
+
+	layer, err := stackLayer(tmpDir, relocatedRunRef.Name())
+	if err != nil {
+		return Relocated{}, err
+	}
+
+	builder, err = mutate.AppendLayers(builder, layer)
 	if err != nil {
 		return Relocated{}, err
 	}
 
 	var md = map[string]interface{}{}
-	if ok, err := getLabel(builderImg, metadataLabel, &md); err != nil {
-		return Relocated{}, err
-	} else if !ok {
-		return Relocated{}, fmt.Errorf("builder %s missing label %s -- try recreating builder", builderImg.Name(), metadataLabel)
+	if err := imagehelpers.GetLabel(builder, metadataLabel, &md); err != nil {
+		return Relocated{}, errors.Wrapf(err, "invalid label %s", metadataLabel)
 	}
 
 	stack, ok := md["stack"].(map[string]interface{})
@@ -73,36 +88,58 @@ func Relocate(registry string) (Relocated, error) {
 	if !ok {
 		return Relocated{}, fmt.Errorf("builder Image does not have run image metadata")
 	}
-	runImageMetadata["image"] = runImage
+	runImageMetadata["image"] = relocatedRunRef.Name()
 	runImageMetadata["mirrors"] = nil
 
-	err = setLabel(builderImg, metadataLabel, md)
+	builder, err = imagehelpers.SetLabels(builder, map[string]interface{}{
+		metadataLabel: md,
+	})
 	if err != nil {
 		return Relocated{}, err
 	}
 
+	relocatedBuilderRef, err := name.ParseReference(registry + "/pbdemo:builder")
+	if err != nil {
+		return Relocated{}, err
+	}
+
+	_, err = save(relocatedBuilderRef, builder)
 	return Relocated{
-		BuilderImage: builderImage,
-		RunImage:     runImage,
-	}, builderImg.Save()
+		BuilderImage: relocatedBuilderRef.Name(),
+		RunImage:     relocatedRunRef.Name(),
+	}, err
 }
 
-func stackLayer(dest, runImage string) (string, error) {
+func save(ref name.Reference, i v1.Image) (string, error) {
+	err := remote.Write(ref, i, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err != nil {
+		return "", err
+	}
+
+	digest, err := i.Digest()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s@%s", ref.Name(), digest.String()), nil
+}
+
+func stackLayer(dest, runImage string) (v1.Layer, error) {
 	buf := &bytes.Buffer{}
 	err := toml.NewEncoder(buf).Encode(StackMetadata{RunImage: RunImageMetadata{
 		Image: runImage,
 	}})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to marshal stack.toml")
+		return nil, errors.Wrapf(err, "failed to marshal stack.toml")
 	}
 
 	layerTar := filepath.Join(dest, "stack.tar")
 	err = CreateSingleFileTar(layerTar, "/cnb/stack.toml", buf.String())
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create stack.toml layer tar")
+		return nil, errors.Wrapf(err, "failed to create stack.toml layer tar")
 	}
 
-	return layerTar, nil
+	return tarball.LayerFromFile(layerTar, tarball.WithCompressionLevel(gzip.DefaultCompression))
 }
 
 func CreateSingleFileTar(tarFile, path, txt string) error {
@@ -129,31 +166,6 @@ func AddFileToTar(tw *tar.Writer, path string, txt string) error {
 		return err
 	}
 	return nil
-}
-
-func setLabel(image imgutil.Image, label string, data interface{}) error {
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		return errors.Wrapf(err, "marshalling data to JSON for label %s", label)
-	}
-	if err := image.SetLabel(label, string(dataBytes)); err != nil {
-		return errors.Wrapf(err, "setting label %s", label)
-	}
-	return nil
-}
-
-func getLabel(image imgutil.Image, label string, obj interface{}) (ok bool, err error) {
-	labelData, err := image.Label(label)
-	if err != nil {
-		return false, errors.Wrapf(err, "retrieving label %s", label)
-	}
-	if labelData != "" {
-		if err := json.Unmarshal([]byte(labelData), obj); err != nil {
-			return false, errors.Wrapf(err, "unmarshalling label %s", label)
-		}
-		return true, nil
-	}
-	return false, nil
 }
 
 type StackMetadata struct {
