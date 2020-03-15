@@ -219,27 +219,16 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 		{
 			Git: &v1alpha1.Git{
 				URL:      "https://github.com/cloudfoundry/go-mod-cnb",
-				Revision: "e0c2d2e78fc2a50b98a83b22c71e4898c7bc05cc",
+				Revision: "master",
+			},
+			SubPath: "integration/testdata/vendored",
+		},
+		{
+			Git: &v1alpha1.Git{
+				URL:      "https://github.com/cloudfoundry/dotnet-core-runtime-cnb",
+				Revision: "master",
 			},
 			SubPath: "integration/testdata/simple_app",
-		},
-		{
-			Git: &v1alpha1.Git{
-				URL:      "https://github.com/buildpack/sample-java-app",
-				Revision: "25b3fcb886e8c6589cab9f8d7a7767cf66bff8e2",
-			},
-		},
-		{
-			Git: &v1alpha1.Git{
-				URL:      "https://github.com/matthewmcnew/sample-java-app",
-				Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
-			},
-		},
-		{
-			Git: &v1alpha1.Git{
-				URL:      "https://github.com/matthewmcnew/sample-java-app",
-				Revision: "dbba68cee6473b5df51a1a43806d920d2ed4e4ee",
-			},
 		},
 	}
 
