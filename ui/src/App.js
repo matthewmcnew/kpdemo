@@ -79,9 +79,8 @@ class AppCard extends React.Component {
         if (runImage !== undefined && this.props.vulnerable.runImage !== "" && runImage.includes(this.props.vulnerable.runImage)) {
             return true;
         }
-
         for (let i = 0; i < items.length; i++) {
-            if (items[i].key === this.props.vulnerable.buildpack && items[i].version === this.props.vulnerable.version) {
+            if (items[i].id === this.props.vulnerable.buildpack && items[i].version === this.props.vulnerable.version) {
                 return true
             }
 
