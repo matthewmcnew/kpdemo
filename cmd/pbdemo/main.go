@@ -46,15 +46,17 @@ func populateCmd() *cobra.Command {
 		Aliases: []string{"setup"},
 		Short:   "Populate Build Service with Images",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Relocating Builder and Run Image. This will take a moment.")
+			fmt.Println("Relocating Buildpacks and Run Image. This will take a moment.")
+			imageTag := fmt.Sprintf("%s/pbdemo", registry)
 
-			relocated, err := populate.Relocate(registry)
+			fmt.Printf("Writing all images to: %s\n", imageTag)
+
+			relocated, err := populate.Relocate(imageTag)
 			if err != nil {
 				return err
 			}
 
-			populate.Populate(count, relocated.BuilderImage, registry, cacheSize)
-			return nil
+			return populate.Populate(count, relocated.Order, imageTag, cacheSize)
 		},
 	}
 	cmd.Flags().StringVarP(&cacheSize, "cache-size", "s", "500Mi", "the cache size to use for build service images")

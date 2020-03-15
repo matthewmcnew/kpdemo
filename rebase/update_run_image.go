@@ -1,12 +1,12 @@
 package rebase
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -27,16 +27,12 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	builder, err := client.BuildV1alpha1().ClusterBuilders().Get(defaults.BuilderName, metav1.GetOptions{})
+	stack, err := client.ExperimentalV1alpha1().Stacks().Get(defaults.StackName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	if builder.Status.Stack.RunImage == "" {
-		return errors.New("error parsing builder run image")
-	}
-
-	reference, err := name.ParseReference(builder.Status.Stack.RunImage)
+	reference, err := name.ParseReference(stack.Spec.RunImage.Image)
 	if err != nil {
 		return err
 	}
@@ -53,27 +49,33 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	i, err = imagehelpers.SetStringLabel(i, "BUILD_SERVICE_DEMO", time.Now().String())
+	i, err = imagehelpers.SetStringLabel(i, "PBDEMO_DEMO", time.Now().String())
 	if err != nil {
 		return err
 	}
 
-	err = remote.Write(updateRef, i, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	updatedImage, err := save(updateRef, i)
 	if err != nil {
 		return err
+	}
+
+	fmt.Printf("Updated Run Image %s@%s\n", updatedImage)
+
+	stack.Spec.RunImage.Image = updatedImage
+	_, err = client.ExperimentalV1alpha1().Stacks().Update(stack)
+	return err
+}
+
+func save(ref name.Reference, i v1.Image) (string, error) {
+	err := remote.Write(ref, i, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err != nil {
+		return "", err
 	}
 
 	digest, err := i.Digest()
 	if err != nil {
-		return err
-	}
-	fmt.Printf("Updated Run Image %s@%s\n", updateRef, digest)
-
-	builder.Annotations = map[string]string{
-		"BUILD_SERVICE_DEMO": time.Now().String(),
+		return "", err
 	}
 
-	_, err = client.BuildV1alpha1().ClusterBuilders().Update(builder)
-
-	return err
+	return fmt.Sprintf("%s@%s", ref.Name(), digest.String()), nil
 }

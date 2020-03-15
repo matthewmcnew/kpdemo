@@ -10,9 +10,11 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -21,31 +23,34 @@ import (
 	"github.com/matthewmcnew/build-service-visualization/k8s"
 )
 
-func Populate(count int32, builder, registry, cacheSize string) {
+func Populate(count int32, order expv1alpha1.Order, imageTag, cacheSize string) error {
 	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
-		log.Fatalf("Error building kubeconfig: %v", err)
+		return errors.Wrapf(err, "building kubeconfig")
 	}
 
 	k8sclient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Fatalf("could not get Build client: %s", err)
+		return errors.Wrapf(err, "building kubeconfig")
 	}
 
 	client, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Fatalf("could not get Build client: %s", err)
+		return errors.Wrapf(err, "building kubeconfig")
 	}
 
-	c := loadConfig(count, registry)
+	c, err := loadConfig(count, imageTag)
+	if err != nil {
+		return err
+	}
 
 	_, err = k8sclient.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaults.Namespace,
 		},
 	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		log.Fatalf(err.Error())
+	if err != nil && !k8errors.IsAlreadyExists(err) {
+		return err
 	}
 
 	secret, err := k8sclient.CoreV1().Secrets(defaults.Namespace).Create(&v1.Secret{
@@ -61,7 +66,9 @@ func Populate(count int32, builder, registry, cacheSize string) {
 		},
 		Type: v1.SecretTypeBasicAuth,
 	})
-	noError(err)
+	if err != nil {
+		return err
+	}
 
 	serviceAccount, err := k8sclient.CoreV1().ServiceAccounts(defaults.Namespace).Create(&v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -73,51 +80,38 @@ func Populate(count int32, builder, registry, cacheSize string) {
 			},
 		},
 	})
-	noError(err)
-
-	const builderName = defaults.BuilderName
-	clusterBuilder, err := client.BuildV1alpha1().ClusterBuilders().Get(builderName, metav1.GetOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		noError(err)
+	if err != nil {
+		return err
 	}
 
-	if errors.IsNotFound(err) {
-		_, err = client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: builderName,
+	err = saveBuilder(client, &expv1alpha1.CustomClusterBuilder{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaults.BuilderName,
+		},
+		Spec: expv1alpha1.CustomClusterBuilderSpec{
+			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
+				Tag:   fmt.Sprintf("%s:%s", c.imageTag, "builder"),
+				Stack: defaults.StackName,
+				Store: defaults.StoreName,
+				Order: order,
 			},
-			Spec: v1alpha1.BuilderSpec{
-				Image:        builder,
-				UpdatePolicy: v1alpha1.Polling,
+			ServiceAccountRef: v1.ObjectReference{
+				Namespace: serviceAccount.Namespace,
+				Name:      serviceAccount.Name,
 			},
-		})
-		if err != nil {
-			noError(err)
-		}
-	} else {
-		_, err = client.BuildV1alpha1().ClusterBuilders().Update(&v1alpha1.ClusterBuilder{
-			ObjectMeta: clusterBuilder.ObjectMeta,
-			Spec: v1alpha1.BuilderSpec{
-				Image:        builder,
-				UpdatePolicy: v1alpha1.Polling,
-			},
-		})
-		if err != nil && !errors.IsAlreadyExists(err) {
-			noError(err)
-		}
+		},
+	})
+	if err != nil {
+		return err
 	}
-
-	updatePbBuilder(builder, client)
-
-	seed := time.Now().UTC().UnixNano()
-	nameGenerator := namegenerator.NewNameGenerator(seed)
 
 	cache, err := resource.ParseQuantity(cacheSize)
 	if err != nil {
-		log.Fatalf("error parsing cache size %s", cacheSize)
+		return err
 	}
-	for i := 1; i <= c.count; i++ {
 
+	nameGenerator := namegenerator.NewNameGenerator(time.Now().UTC().UnixNano())
+	for i := 1; i <= c.count; i++ {
 		sourceConfig, tag := randomSourceConfig()
 		image, err := client.BuildV1alpha1().Images(defaults.Namespace).Create(&v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
@@ -126,8 +120,8 @@ func Populate(count int32, builder, registry, cacheSize string) {
 			Spec: v1alpha1.ImageSpec{
 				Tag: fmt.Sprintf("%s:%s", c.imageTag, tag),
 				Builder: v1.ObjectReference{
-					Name: builderName,
-					Kind: "ClusterBuilder",
+					Name: defaults.BuilderName,
+					Kind: "CustomClusterBuilder",
 				},
 				ServiceAccount:       serviceAccount.Name,
 				Source:               sourceConfig,
@@ -135,9 +129,9 @@ func Populate(count int32, builder, registry, cacheSize string) {
 				ImageTaggingStrategy: v1alpha1.None,
 			},
 		})
-		if err != nil && !errors.IsAlreadyExists(err) {
-			noError(err)
-		} else if errors.IsAlreadyExists(err) {
+		if err != nil && !k8errors.IsAlreadyExists(err) {
+			return err
+		} else if k8errors.IsAlreadyExists(err) {
 			i--
 			continue
 		}
@@ -145,60 +139,46 @@ func Populate(count int32, builder, registry, cacheSize string) {
 		log.Printf("created image %s", image.Name)
 		time.Sleep(3 * time.Second)
 	}
-
-}
-
-func noError(err error) {
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	return nil
 }
 
 type config struct {
-	builder      string
-	testRegistry string
-	imageTag     string
-	username     string
-	password     string
-	registry     string
-	count        int
+	builder  string
+	imageTag string
+	username string
+	password string
+	registry string
+	count    int
 }
 
-func loadConfig(count int32, registry string) config {
-	imageTag := registryTag(registry)
-
-	reg, err := name.ParseReference(registry, name.WeakValidation)
+func loadConfig(count int32, imageTag string) (config, error) {
+	reg, err := name.ParseReference(imageTag, name.WeakValidation)
 	if err != nil {
-		log.Fatalf("Could not parse %s", imageTag)
+		return config{}, errors.Wrapf(err, "could not parse %s", imageTag)
 	}
 
 	auth, err := authn.DefaultKeychain.Resolve(reg.Context().Registry)
 	if err != nil {
-		log.Fatalf("Could not find keychain for%s", imageTag)
+		return config{}, errors.Wrapf(err, "could not find registry", imageTag)
 	}
 
 	basicAuth, err := auth.Authorization()
 	if err != nil {
-		log.Fatalf("Could not get auth for%s", imageTag)
+		return config{}, errors.Wrapf(err, "could not get auth for imge", imageTag)
 	}
 
 	return config{
-		testRegistry: registry,
-		username:     basicAuth.Username,
-		password:     basicAuth.Password,
-		count:        int(count),
-		imageTag:     imageTag,
+		username: basicAuth.Username,
+		password: basicAuth.Password,
+		count:    int(count),
+		imageTag: imageTag,
 		registry: func() string {
 			if reg.Context().RegistryStr() == name.DefaultRegistry {
 				return "https://" + name.DefaultRegistry + "/v1/"
 			}
 			return reg.Context().RegistryStr()
 		}(),
-	}
-}
-
-func registryTag(registry string) string {
-	return registry + "/pbdemo"
+	}, nil
 }
 
 func randomSourceConfig() (v1alpha1.SourceConfig, string) {
@@ -236,9 +216,7 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 		"java",
 		"node",
 		"go",
-		"maven",
-		"java",
-		"java",
+		"dotnet",
 	}
 
 	randomIndex := rand.Intn(len(sourceConfigs))
@@ -246,27 +224,16 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 	return sourceConfigs[randomIndex], imageTypes[randomIndex]
 }
 
-func updatePbBuilder(builderName string, client *versioned.Clientset) {
-	builder, err := client.BuildV1alpha1().Builders("build-service-builds").Get("build-service-builder", metav1.GetOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		noError(err)
+func saveBuilder(client *versioned.Clientset, builder *expv1alpha1.CustomClusterBuilder) error {
+	existingBuilder, err := client.ExperimentalV1alpha1().CustomClusterBuilders().Get(defaults.BuilderName, metav1.GetOptions{})
+	if err != nil && !k8errors.IsNotFound(err) {
+		return err
 	}
-
-	if errors.IsNotFound(err) {
-		return
+	if k8errors.IsNotFound(err) {
+		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Create(builder)
+	} else {
+		existingBuilder.Spec = builder.Spec
+		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Update(existingBuilder)
 	}
-
-	_, err = client.BuildV1alpha1().Builders("build-service-builds").Update(&v1alpha1.Builder{
-		ObjectMeta: builder.ObjectMeta,
-		Spec: v1alpha1.BuilderWithSecretsSpec{
-			BuilderSpec: v1alpha1.BuilderSpec{
-				Image:        builderName,
-				UpdatePolicy: v1alpha1.Polling,
-			},
-		},
-	})
-	if err != nil {
-		noError(err)
-	}
-
+	return err
 }

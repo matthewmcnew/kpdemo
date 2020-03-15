@@ -1,38 +1,37 @@
 package populate
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pkg/errors"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/matthewmcnew/build-service-visualization/defaults"
+	"github.com/matthewmcnew/build-service-visualization/k8s"
 )
 
-const metadataLabel = "io.buildpacks.builder.metadata"
-
 type Relocated struct {
-	BuilderImage string
-	RunImage     string
+	Order expv1alpha1.Order
 }
 
-func Relocate(registry string) (Relocated, error) {
-	tmpDir, err := ioutil.TempDir("", "create-builder-scratch")
+func Relocate(imageTag string) (Relocated, error) {
+	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
-		return Relocated{}, err
+		return Relocated{}, errors.Wrapf(err, "building kubeconfig")
 	}
-	defer os.RemoveAll(tmpDir)
+
+	client, err := versioned.NewForConfig(clusterConfig)
+	if err != nil {
+		return Relocated{}, errors.Wrapf(err, "building kubeconfig")
+	}
 
 	runRef, err := name.ParseReference("cloudfoundry/run:base-cnb")
 	if err != nil {
@@ -44,12 +43,12 @@ func Relocate(registry string) (Relocated, error) {
 		return Relocated{}, err
 	}
 
-	relocatedRunRef, err := name.ParseReference(registry + "/pbdemo:run")
+	relocatedRunRef, err := name.ParseReference(imageTag + ":run")
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	_, err = save(relocatedRunRef, run)
+	runImage, err := save(relocatedRunRef, run)
 	if err != nil {
 		return Relocated{}, err
 	}
@@ -64,49 +63,51 @@ func Relocate(registry string) (Relocated, error) {
 		return Relocated{}, err
 	}
 
-	layer, err := stackLayer(tmpDir, relocatedRunRef.Name())
+	var order []expv1alpha1.OrderEntry
+	err = imagehelpers.GetLabel(builder, "io.buildpacks.buildpack.order", &order)
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	builder, err = mutate.AppendLayers(builder, layer)
+	relocatedBuilderRef, err := name.ParseReference(imageTag + ":buildpacks")
 	if err != nil {
 		return Relocated{}, err
 	}
+	buildpacksImage, err := save(relocatedBuilderRef, builder)
 
-	var md = map[string]interface{}{}
-	if err := imagehelpers.GetLabel(builder, metadataLabel, &md); err != nil {
-		return Relocated{}, errors.Wrapf(err, "invalid label %s", metadataLabel)
-	}
-
-	stack, ok := md["stack"].(map[string]interface{})
-	if !ok {
-		return Relocated{}, fmt.Errorf("builder Image does not have stack metadata")
-	}
-
-	runImageMetadata, ok := stack["runImage"].(map[string]interface{})
-	if !ok {
-		return Relocated{}, fmt.Errorf("builder Image does not have run image metadata")
-	}
-	runImageMetadata["image"] = relocatedRunRef.Name()
-	runImageMetadata["mirrors"] = nil
-
-	builder, err = imagehelpers.SetLabels(builder, map[string]interface{}{
-		metadataLabel: md,
+	err = saveStack(client, &expv1alpha1.Stack{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaults.StackName,
+		},
+		Spec: expv1alpha1.StackSpec{
+			Id: "io.buildpacks.stacks.bionic",
+			BuildImage: expv1alpha1.StackSpecImage{
+				Image: "cloudfoundry/build:base-cnb",
+			},
+			RunImage: expv1alpha1.StackSpecImage{
+				Image: runImage,
+			},
+		},
 	})
 	if err != nil {
 		return Relocated{}, err
 	}
 
-	relocatedBuilderRef, err := name.ParseReference(registry + "/pbdemo:builder")
-	if err != nil {
-		return Relocated{}, err
-	}
+	err = saveStore(client, &expv1alpha1.Store{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaults.StoreName,
+		},
+		Spec: expv1alpha1.StoreSpec{
+			Sources: []expv1alpha1.StoreImage{
+				{
+					Image: buildpacksImage,
+				},
+			},
+		},
+	})
 
-	_, err = save(relocatedBuilderRef, builder)
 	return Relocated{
-		BuilderImage: relocatedBuilderRef.Name(),
-		RunImage:     relocatedRunRef.Name(),
+		Order: order,
 	}, err
 }
 
@@ -124,55 +125,30 @@ func save(ref name.Reference, i v1.Image) (string, error) {
 	return fmt.Sprintf("%s@%s", ref.Name(), digest.String()), nil
 }
 
-func stackLayer(dest, runImage string) (v1.Layer, error) {
-	buf := &bytes.Buffer{}
-	err := toml.NewEncoder(buf).Encode(StackMetadata{RunImage: RunImageMetadata{
-		Image: runImage,
-	}})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal stack.toml")
-	}
-
-	layerTar := filepath.Join(dest, "stack.tar")
-	err = CreateSingleFileTar(layerTar, "/cnb/stack.toml", buf.String())
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create stack.toml layer tar")
-	}
-
-	return tarball.LayerFromFile(layerTar, tarball.WithCompressionLevel(gzip.DefaultCompression))
-}
-
-func CreateSingleFileTar(tarFile, path, txt string) error {
-	fh, err := os.Create(tarFile)
-	if err != nil {
-		return fmt.Errorf("create file for tar: %s", err)
-	}
-	defer fh.Close()
-
-	tw := tar.NewWriter(fh)
-	defer tw.Close()
-	return AddFileToTar(tw, path, txt)
-}
-
-func AddFileToTar(tw *tar.Writer, path string, txt string) error {
-	if err := tw.WriteHeader(&tar.Header{
-		Name: path,
-		Size: int64(len(txt)),
-		Mode: 0644,
-	}); err != nil {
+func saveStore(client *versioned.Clientset, store *expv1alpha1.Store) error {
+	existingStore, err := client.ExperimentalV1alpha1().Stores().Get(defaults.StoreName, metav1.GetOptions{})
+	if err != nil && !k8errors.IsNotFound(err) {
 		return err
 	}
-	if _, err := tw.Write([]byte(txt)); err != nil {
+	if k8errors.IsNotFound(err) {
+		_, err = client.ExperimentalV1alpha1().Stores().Create(store)
+	} else {
+		existingStore.Spec = store.Spec
+		_, err = client.ExperimentalV1alpha1().Stores().Update(existingStore)
+	}
+	return err
+}
+
+func saveStack(client *versioned.Clientset, stack *expv1alpha1.Stack) error {
+	existingStack, err := client.ExperimentalV1alpha1().Stacks().Get(defaults.StackName, metav1.GetOptions{})
+	if err != nil && !k8errors.IsNotFound(err) {
 		return err
 	}
-	return nil
-}
-
-type StackMetadata struct {
-	RunImage RunImageMetadata `json:"runImage" toml:"run-image"`
-}
-
-type RunImageMetadata struct {
-	Image   string   `json:"image" toml:"image"`
-	Mirrors []string `json:"mirrors" toml:"mirrors"`
+	if k8errors.IsNotFound(err) {
+		_, err = client.ExperimentalV1alpha1().Stacks().Create(stack)
+	} else {
+		existingStack.Spec = stack.Spec
+		_, err = client.ExperimentalV1alpha1().Stacks().Update(existingStack)
+	}
+	return err
 }
