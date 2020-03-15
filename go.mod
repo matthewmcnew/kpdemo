@@ -5,14 +5,14 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/apex/log v1.1.2-0.20190827100214-baa5455d1012
-	github.com/google/go-containerregistry v0.0.0-20191018211754-b77a90c667af
+	github.com/google/go-containerregistry v0.0.0-20200311163244-4b1985e5ea21
 	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
-	github.com/opencontainers/go-digest v1.0.0-rc1
-	github.com/pivotal/kpack v0.0.6
+	github.com/pivotal/kpack v0.0.7-0.20200314041839-dc8ab3529565
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.6
 	github.com/spf13/cobra v0.0.5
-	k8s.io/api v0.0.0-20190819141258-3544db3b9e44
-	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
-	k8s.io/client-go v0.0.0-20190819141724-e14f31a72a77
+	github.com/stretchr/testify v1.5.1
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.0
+	k8s.io/client-go v0.17.0
 )
