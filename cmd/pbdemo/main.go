@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/matthewmcnew/build-service-visualization/buildpacks"
 	"github.com/matthewmcnew/build-service-visualization/logs"
 	"github.com/matthewmcnew/build-service-visualization/populate"
 	"github.com/matthewmcnew/build-service-visualization/rebase"
@@ -22,10 +23,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	err := rootCmd.Execute()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	_ = rootCmd.Execute()
 }
 
 func init() {
@@ -34,6 +32,7 @@ func init() {
 		updateRunImageCmd(),
 		cleanupCmd(),
 		logsCmd(),
+		updateBPCmd(),
 	)
 }
 
@@ -66,6 +65,21 @@ func populateCmd() *cobra.Command {
 
 	cmd.Flags().Int32VarP(&count, "count", "c", 0, "the number of images to populate in build service")
 	_ = cmd.MarkFlagRequired("count")
+
+	return cmd
+}
+
+func updateBPCmd() *cobra.Command {
+	var buildpack string
+	var cmd = &cobra.Command{
+		Use:   "update-buildpack",
+		Short: "Create new buildpack to simulate update",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return buildpacks.UpdateBuildpack(buildpack)
+		},
+	}
+	cmd.Flags().StringVarP(&buildpack, "buildpack", "b", "", "the id of the buildpack to update")
+	_ = cmd.MarkFlagRequired("buildpack")
 
 	return cmd
 }

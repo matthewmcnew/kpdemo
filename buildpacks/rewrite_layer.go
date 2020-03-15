@@ -45,6 +45,11 @@ func rewriteLayer(layer v1.Layer, old, new string) (v1.Layer, error) {
 
 			bd.Info.Version = new
 
+			bd.Order, err = calculateNewOrder(bd)
+			if err != nil {
+				return nil, err
+			}
+
 			updatedBuildpackToml := &bytes.Buffer{}
 			err = toml.NewEncoder(updatedBuildpackToml).Encode(bd)
 			if err != nil {
@@ -86,11 +91,34 @@ func rewriteLayer(layer v1.Layer, old, new string) (v1.Layer, error) {
 	return tarball.LayerFromReader(b)
 }
 
+func calculateNewOrder(bd BuildpackDescriptor) (Order, error) {
+	var newOrder Order
+	for _, oe := range bd.Order {
+		var newGroup []BuildpackRef
+		for _, g := range oe.Group {
+			newVersion, err := newVersion(g.Id, g.Version)
+			if err != nil {
+				return nil, err
+			}
+
+			newGroup = append(newGroup, BuildpackRef{
+				BuildpackInfo: BuildpackInfo{
+					Id:      g.Id,
+					Version: newVersion,
+				},
+				Optional: g.Optional,
+			})
+		}
+		newOrder = append(newOrder, OrderEntry{Group: newGroup})
+	}
+	return newOrder, nil
+}
+
 type BuildpackDescriptor struct {
 	API      string            `toml:"api"`
 	Info     BuildpackTomlInfo `toml:"buildpack"`
 	Stacks   interface{}       `toml:"stacks"`
-	Order    interface{}       `toml:"order"`
+	Order    Order             `toml:"order"`
 	Metadata interface{}       `toml:"metadata"`
 }
 

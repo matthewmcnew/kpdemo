@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func buildpackage(id, version, newVersion, source, destination string) (string, error) {
+func buildpackage(id, version, source, destination string) (string, error) {
 	reference, err := name.ParseReference(source)
 	if err != nil {
 		return "", err
@@ -30,22 +30,7 @@ func buildpackage(id, version, newVersion, source, destination string) (string, 
 		return "", err
 	}
 
-	info, err := metadata.metadataFor(id, version)
-	if err != nil {
-		return "", err
-	}
-
-	hash, err := v1.NewHash(info.LayerDiffID)
-	if err != nil {
-		return "", err
-	}
-
-	bpl, err := sourceImage.LayerByDiffID(hash)
-	if err != nil {
-		return "", err
-	}
-
-	newBpL, err := rewriteLayer(bpl, version, newVersion)
+	info, layers, err := metadata.metadataAndLayersFor(BuildpackLayerMetadata{}, sourceImage, id, version)
 	if err != nil {
 		return "", err
 	}
@@ -55,24 +40,13 @@ func buildpackage(id, version, newVersion, source, destination string) (string, 
 		return "", err
 	}
 
-	newBuildpackage, err = mutate.AppendLayers(newBuildpackage, newBpL)
+	newBuildpackage, err = mutate.AppendLayers(newBuildpackage, layers...)
 	if err != nil {
 		return "", err
 	}
 
 	newBuildpackage, err = imagehelpers.SetLabels(newBuildpackage, map[string]interface{}{
-		"io.buildpacks.buildpack.layers": BuildpackLayerMetadata{
-			id: {
-				newVersion: info,
-			},
-		},
-		"io.buildpacks.buildpackage.metadata": Metadata{
-			BuildpackInfo: BuildpackInfo{
-				Id:      id,
-				Version: newVersion,
-			},
-			Stacks: info.Stacks,
-		},
+		"io.buildpacks.buildpack.layers": info,
 	})
 	if err != nil {
 		return "", err
@@ -95,36 +69,89 @@ func buildpackage(id, version, newVersion, source, destination string) (string, 
 
 	identifer := fmt.Sprintf("%s@%s", destination, digest.String())
 
-	fmt.Printf("successfully wrote %s@%s to %s\n", id, newVersion, identifer)
 	return identifer, nil
 }
 
 type BuildpackLayerMetadata map[string]map[string]BuildpackLayerInfo
 
-func (m BuildpackLayerMetadata) metadataFor(id string, version string) (BuildpackLayerInfo, error) {
+func (m BuildpackLayerMetadata) metadataAndLayersFor(initalMetadata BuildpackLayerMetadata, sourceImage v1.Image, id string, version string) (BuildpackLayerMetadata, []v1.Layer, error) {
 	bps, ok := m[id]
 	if !ok {
-		var available []string
-
-		for bp := range m {
-			available = append(available, bp)
-		}
-
-		return BuildpackLayerInfo{}, errors.Errorf("could not find %s, options: %s", id, available)
+		return m, nil, errors.Errorf("could not find %s", id)
 	}
 
 	info, ok := bps[version]
 	if !ok {
-		var available []string
-
-		for v := range bps {
-			available = append(available, fmt.Sprintf("%s@%s", id, v))
-		}
-
-		return BuildpackLayerInfo{}, errors.Errorf("could not find %s@%s, options: %s", id, version, available)
+		return m, nil, errors.Errorf("could not find %s@%s", id, version)
 	}
 
-	return info, nil
+	var layers []v1.Layer
+	var newOrder Order
+	for _, oe := range info.Order {
+		var newGroup []BuildpackRef
+		for _, g := range oe.Group {
+			var err error
+			var ls []v1.Layer
+
+			initalMetadata, ls, err = m.metadataAndLayersFor(initalMetadata, sourceImage, g.Id, g.Version)
+			if err != nil {
+				return m, nil, err
+			}
+			layers = append(layers, ls...)
+
+			newVersion, err := newVersion(g.Id, g.Version)
+			if err != nil {
+				return m, nil, err
+			}
+
+			newGroup = append(newGroup, BuildpackRef{
+				BuildpackInfo: BuildpackInfo{
+					Id:      g.Id,
+					Version: newVersion,
+				},
+				Optional: g.Optional,
+			})
+		}
+		newOrder = append(newOrder, OrderEntry{Group: newGroup})
+	}
+
+	hash, err := v1.NewHash(info.LayerDiffID)
+	if err != nil {
+		return m, nil, err
+	}
+
+	bpl, err := sourceImage.LayerByDiffID(hash)
+	if err != nil {
+		return m, nil, err
+	}
+
+	newVersion, err := newVersion(id, version)
+	if err != nil {
+		return m, nil, err
+	}
+	newBpL, err := rewriteLayer(bpl, version, newVersion)
+	if err != nil {
+		return m, nil, err
+	}
+
+	diffID, err := newBpL.DiffID()
+	if err != nil {
+		return m, nil, err
+	}
+
+	_, ok = initalMetadata[id]
+	if !ok {
+		initalMetadata[id] = map[string]BuildpackLayerInfo{}
+	}
+	initalMetadata[id][newVersion] = info
+	initalMetadata[id][newVersion] = BuildpackLayerInfo{
+		API:         info.API,
+		Stacks:      info.Stacks,
+		Order:       newOrder,
+		LayerDiffID: diffID.String(),
+	}
+
+	return initalMetadata, append(layers, newBpL), nil
 }
 
 type BuildpackLayerInfo struct {
