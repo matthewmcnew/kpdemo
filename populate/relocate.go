@@ -1,6 +1,7 @@
 package populate
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -133,6 +134,12 @@ func saveStore(client *versioned.Clientset, store *expv1alpha1.Store) error {
 	if k8errors.IsNotFound(err) {
 		_, err = client.ExperimentalV1alpha1().Stores().Create(store)
 	} else {
+		oldSpec, err := json.Marshal(existingStore.Spec)
+		if err != nil {
+			return err
+		}
+
+		existingStore.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)
 		existingStore.Spec = store.Spec
 		_, err = client.ExperimentalV1alpha1().Stores().Update(existingStore)
 	}
@@ -147,6 +154,12 @@ func saveStack(client *versioned.Clientset, stack *expv1alpha1.Stack) error {
 	if k8errors.IsNotFound(err) {
 		_, err = client.ExperimentalV1alpha1().Stacks().Create(stack)
 	} else {
+		oldSpec, err := json.Marshal(existingStack.Spec)
+		if err != nil {
+			return err
+		}
+
+		existingStack.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)
 		existingStack.Spec = stack.Spec
 		_, err = client.ExperimentalV1alpha1().Stacks().Update(existingStack)
 	}

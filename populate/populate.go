@@ -1,6 +1,7 @@
 package populate
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -232,6 +233,12 @@ func saveBuilder(client *versioned.Clientset, builder *expv1alpha1.CustomCluster
 	if k8errors.IsNotFound(err) {
 		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Create(builder)
 	} else {
+		oldSpec, err := json.Marshal(existingBuilder.Spec)
+		if err != nil {
+			return err
+		}
+
+		existingBuilder.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)
 		existingBuilder.Spec = builder.Spec
 		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Update(existingBuilder)
 	}
