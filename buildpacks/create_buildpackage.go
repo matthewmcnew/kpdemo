@@ -45,8 +45,19 @@ func buildpackage(id, version, source, destination string) (string, error) {
 		return "", err
 	}
 
+	newVersion, err := newVersion(id, version)
+	if err != nil {
+		return "", err
+	}
+
 	newBuildpackage, err = imagehelpers.SetLabels(newBuildpackage, map[string]interface{}{
 		"io.buildpacks.buildpack.layers": info,
+		"io.buildpacks.buildpackage.metadata": Metadata{
+			BuildpackInfo: BuildpackInfo{
+				Id:      id,
+				Version: newVersion,
+			},
+		},
 	})
 	if err != nil {
 		return "", err
