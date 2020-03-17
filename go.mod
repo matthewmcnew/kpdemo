@@ -1,4 +1,4 @@
-module github.com/matthewmcnew/build-service-visualization
+module github.com/matthewmcnew/pbdemo
 
 go 1.13
 
