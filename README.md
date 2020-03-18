@@ -1,22 +1,26 @@
 # pbdemo
 
+A tool to visualize and demo [kpack](https://github.com/pivotal/kpack). 
+
 ![Sample](docs/assets/sample.png)
 
 #### Prerequisites
 
-- Access to a kubernetes cluster with kpack or Build Service Installed
-- Cluster-admin permissions for the kubernetes cluster with kpack or Build Service Installed
-- Accessible Docker V2 Registry
+- Access to a kubernetes cluster with kpack installed.
+- Cluster-admin permissions for the kubernetes cluster with kpack.
+- Accessible Docker V2 Registry.
 
-## Setup
+## Get Started
 
-1. Download and install the most recent pbdemo [github release](https://github.com/matthewmcnew/build-service-Visualization/releases)
-for your operating system.
+1. Download the newest [release](https://github.com/matthewmcnew/pbdemo/releases)
+2. Run `pbdemo serve` to get an visualization of the images inside of a kpack cluster.   
+
+### Demos
 
 1. Start the local server for the build service visualization web UI
 
     ```bash
-    pbdemo visualization
+    pbdemo serve
     ```
     
     >  This should start up a local Build Service visualization web server that you access in the browser. 
@@ -37,7 +41,7 @@ for your operating system.
     
     - (Optional) `cache-size`: The Cache Size for each image's build cache. Example: `--cache-size 100Mi` Default: '500Mi'
     
-    >  Warning: The registry configured in pbdemo populate must be publicly readable by build service 
+    >  Warning: The registry configured in pbdemo populate must be publicly readable by kpack. 
     
 1. Navigate to the Web UI in your browser to see build service build all the images created in step #3. 
 
@@ -61,11 +65,11 @@ for your operating system.
 
 1. Navigate to the Web UI in your browser to watch build service `rebase` all the images that used the previous stack (run image).
 
-## Demo: JDK Update via Buildpacks 
+## Demo: Buildpack update
 
-1. Navigate to the build service web UI and mark the current `org.cloudfoundry.openjdk` as 'vulnerable'.   
+1. Navigate to the build service web UI and mark a buildpack id & version as 'vulnerable'.   
 
-    - Copy the current backpack ID & Version for `org.cloudfoundry.openjdk` from one of the existing images in the visualization.
+    - Copy the current backpack ID & Version for from one of the existing images in the visualization.
     - Click on Setup in the top right corner.
     - Paste the Buildpack ID & Version into the Modal.
     - Click Save. 
@@ -73,13 +77,24 @@ for your operating system.
      
 1. Push an Updated Backpack 
     
-    The `pbdemo update-buildpacks` will push an updated builder with updated buildpacks to the registry build service is monitoring.
+    The `pbdemo update-buildpacks --buildpack <buildpack>` will create a new buildpack and add it to the kpack buildpack store. Kpack will rebuild "out-of-date" images with the new buildpack.
     
     ```
-    pbdemo update-buildpacks
-    ```   
+    pbdemo update-buildpacks --buildpack <buildpack.id>
+    ```
+   
+   Note: 
 
 1. Navigate to the Web UI in your browser to watch build service `rebuild` all the images that used the previous buildpack.
+
+
+## Image logs
+
+You can view the build logs of any image in any namespace `pbdemo <image-logs>`.  
+
+```
+pbdemo logs <image-name>
+   ```
 
 ## Cleanup
    
@@ -88,3 +103,5 @@ for your operating system.
     ```
     pbdemo cleanup
     ```  
+   
+   Note: this will reset your kpack builder,stack, and store resources to their previous state before using pbdemo. 
