@@ -139,6 +139,10 @@ func saveStore(client *versioned.Clientset, store *expv1alpha1.Store) error {
 			return err
 		}
 
+		if existingStore.Annotations == nil {
+			existingStore.Annotations = map[string]string{}
+		}
+
 		existingStore.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)
 		existingStore.Spec = store.Spec
 		_, err = client.ExperimentalV1alpha1().Stores().Update(existingStore)
@@ -157,6 +161,10 @@ func saveStack(client *versioned.Clientset, stack *expv1alpha1.Stack) error {
 		oldSpec, err := json.Marshal(existingStack.Spec)
 		if err != nil {
 			return err
+		}
+
+		if existingStack.Annotations == nil {
+			existingStack.Annotations = map[string]string{}
 		}
 
 		existingStack.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)

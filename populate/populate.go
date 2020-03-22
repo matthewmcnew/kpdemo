@@ -238,6 +238,10 @@ func saveBuilder(client *versioned.Clientset, builder *expv1alpha1.CustomCluster
 			return err
 		}
 
+		if existingBuilder.Annotations == nil {
+			existingBuilder.Annotations = map[string]string{}
+		}
+
 		existingBuilder.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)
 		existingBuilder.Spec = builder.Spec
 		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Update(existingBuilder)
