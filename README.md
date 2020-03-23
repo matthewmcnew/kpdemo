@@ -94,6 +94,7 @@ You can view the build logs of any image in any namespace `pbdemo <image-logs>`.
 
 ```
 pbdemo logs <image-name>
+```
 
 ## Cleanup
    
