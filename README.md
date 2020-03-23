@@ -6,7 +6,7 @@ A tool to visualize and demo [kpack](https://github.com/pivotal/kpack).
 
 #### Prerequisites
 
-- Access to a kubernetes cluster with kpack installed.
+- Access to a kubernetes cluster with [kpack installed](https://github.com/pivotal/kpack/releases).
 - Cluster-admin permissions for the kubernetes cluster with kpack.
 - Accessible Docker V2 Registry.
 
