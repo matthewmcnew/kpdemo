@@ -1,7 +1,10 @@
 package defaults
 
-const BuilderName = "default"
-const StackName = "build-service-stack"
-const StoreName = "build-service-store"
-const Namespace = "demo-project"
-const OldSpecAnnotation = "pbdemo/old-spec"
+const (
+	BuilderName                 = "default"
+	StackName                   = "build-service-stack"
+	StoreName                   = "build-service-store"
+	Namespace                   = "demo-project"
+	OldSpecAnnotation           = "pbdemo/old-spec"
+	DefaultRepositoryAnnotation = "buildservice.pivotal.io/defaultRepository"
+)

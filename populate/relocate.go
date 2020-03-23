@@ -3,7 +3,7 @@ package populate
 import (
 	"encoding/json"
 	"fmt"
-
+	"github.com/fatih/color"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -52,6 +52,13 @@ func Relocate(imageTag string) (Relocated, error) {
 	runImage, err := save(relocatedRunRef, run)
 	if err != nil {
 		return Relocated{}, err
+	}
+
+	if !verifyRegistryPublic(client, runImage) {
+		fmt.Printf("\n%s: Image: %s is not public. \n pbdemo populate will not work if %s is not public or readable by kpack and the nodes on the cluster\n Continuing anyway...\n\n",
+			color.RedString("WARNING"),
+			imageTag,
+			imageTag)
 	}
 
 	builderRef, err := name.ParseReference("cloudfoundry/cnb:bionic")
@@ -172,4 +179,43 @@ func saveStack(client *versioned.Clientset, stack *expv1alpha1.Stack) error {
 		_, err = client.ExperimentalV1alpha1().Stacks().Update(existingStack)
 	}
 	return err
+}
+
+func verifyRegistryPublic(client *versioned.Clientset, image string) bool {
+	if isBuildServiceRegistry(client, image) {
+		return true
+	}
+
+	ref, _ := name.ParseReference(image)
+
+	_, err := remote.Image(ref, remote.WithAuth(authn.Anonymous))
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func isBuildServiceRegistry(client *versioned.Clientset, image string) bool {
+	stack, err := client.ExperimentalV1alpha1().Stacks().Get(defaults.StackName, metav1.GetOptions{})
+	if err != nil {
+		return false
+	}
+
+	defaultRepo, ok := stack.Annotations[defaults.DefaultRepositoryAnnotation]
+	if !ok {
+		return false
+	}
+
+	defaultReg, err := name.ParseReference(defaultRepo)
+	if err != nil {
+		return false
+	}
+
+	reg, err := name.ParseReference(image)
+	if err != nil {
+		return false
+	}
+
+	return defaultReg.Context().RegistryStr() == reg.Context().RegistryStr()
 }
