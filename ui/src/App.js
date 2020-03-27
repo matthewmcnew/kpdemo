@@ -33,12 +33,10 @@ class AppCard extends React.Component {
     }
 
     color() {
-        if (this.props.status === "True") {
+        if (this.props.lastBuildStatus === "True") {
             return "bg-success"
-        } else if (this.props.status === "False") {
+        } else if (this.props.lastBuildStatus === "False") {
             return "bg-danger"
-        } else if (this.props.latestImage !== "") {
-            return "bg-success"
         }
 
         return "bg-secondary"

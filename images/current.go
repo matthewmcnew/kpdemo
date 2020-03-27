@@ -15,17 +15,18 @@ import (
 )
 
 type Image struct {
-	Name          string                         `json:"name"`
-	Namespace     string                         `json:"namespace"`
-	BuildCount    int64                          `json:"buildCount"`
-	Status        string                         `json:"status"`
-	BuildMetadata v1alpha1.BuildpackMetadataList `json:"buildMetadata"`
-	Completed     int                            `json:"completed"`
-	Remaining     int                            `json:"remaining"`
-	CreatedAt     time.Time                      `json:"createdAt"`
-	Tag           string                         `json:"tag"`
-	LatestImage   string                         `json:"latestImage"`
-	RunImage      string                         `json:"runImage"`
+	Name            string                         `json:"name"`
+	Namespace       string                         `json:"namespace"`
+	BuildCount      int64                          `json:"buildCount"`
+	Status          string                         `json:"status"`
+	BuildMetadata   v1alpha1.BuildpackMetadataList `json:"buildMetadata"`
+	Completed       int                            `json:"completed"`
+	Remaining       int                            `json:"remaining"`
+	CreatedAt       time.Time                      `json:"createdAt"`
+	Tag             string                         `json:"tag"`
+	LatestImage     string                         `json:"latestImage"`
+	RunImage        string                         `json:"runImage"`
+	LastBuildStatus string                         `json:"lastBuildStatus"`
 }
 
 func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.BuildLister) ([]Image, error) {
@@ -45,17 +46,18 @@ func Current(lister v1alpha1Listers.ImageLister, buildLister v1alpha1Listers.Bui
 
 		done, remaining := remaining(buildLister, i)
 		images = append(images, Image{
-			Name:          i.Name,
-			Tag:           i.Spec.Tag,
-			LatestImage:   i.Status.LatestImage,
-			Namespace:     i.Namespace,
-			BuildCount:    i.Status.BuildCounter,
-			Status:        status(i),
-			CreatedAt:     i.CreationTimestamp.Time,
-			Completed:     done,
-			Remaining:     remaining,
-			BuildMetadata: lastCompletedBuild.Status.BuildMetadata,
-			RunImage:      lastCompletedBuild.Status.Stack.RunImage,
+			Name:            i.Name,
+			Tag:             i.Spec.Tag,
+			LatestImage:     i.Status.LatestImage,
+			Namespace:       i.Namespace,
+			BuildCount:      i.Status.BuildCounter,
+			Status:          status(i),
+			LastBuildStatus: buildStatus(lastCompletedBuild),
+			CreatedAt:       i.CreationTimestamp.Time,
+			Completed:       done,
+			Remaining:       remaining,
+			BuildMetadata:   lastCompletedBuild.Status.BuildMetadata,
+			RunImage:        lastCompletedBuild.Status.Stack.RunImage,
 		})
 	}
 
@@ -121,6 +123,15 @@ func remaining(buildLister v1alpha1Listers.BuildLister, image *v1alpha1.Image) (
 
 func status(image *v1alpha1.Image) string {
 	condition := image.Status.GetCondition(corev1alpha1.ConditionReady)
+	if condition == nil {
+		return string(v1.ConditionUnknown)
+	}
+
+	return string(condition.Status)
+}
+
+func buildStatus(build *v1alpha1.Build) string {
+	condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded)
 	if condition == nil {
 		return string(v1.ConditionUnknown)
 	}
