@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/matthewmcnew/build-service-visualization/defaults"
-	"github.com/matthewmcnew/build-service-visualization/k8s"
+	"github.com/matthewmcnew/pbdemo/defaults"
+	"github.com/matthewmcnew/pbdemo/k8s"
 )
 
 func Populate(count int32, order expv1alpha1.Order, imageTag, cacheSize string) error {

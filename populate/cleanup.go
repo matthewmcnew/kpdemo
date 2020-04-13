@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/matthewmcnew/build-service-visualization/defaults"
-	"github.com/matthewmcnew/build-service-visualization/k8s"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/matthewmcnew/pbdemo/defaults"
+	"github.com/matthewmcnew/pbdemo/k8s"
 )
 
 func Cleanup() error {

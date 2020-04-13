@@ -11,7 +11,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/matthewmcnew/build-service-visualization/k8s"
+	"github.com/matthewmcnew/pbdemo/k8s"
 )
 
 func Logs(name string) error {

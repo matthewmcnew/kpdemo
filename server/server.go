@@ -2,16 +2,18 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/matthewmcnew/build-service-visualization/images"
-	"github.com/matthewmcnew/build-service-visualization/k8s"
-	_ "github.com/matthewmcnew/build-service-visualization/statik"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/rakyll/statik/fs"
-	"log"
-	"net/http"
-	"time"
+
+	"github.com/matthewmcnew/pbdemo/images"
+	"github.com/matthewmcnew/pbdemo/k8s"
+	_ "github.com/matthewmcnew/pbdemo/statik"
 )
 
 func Serve(port string) {

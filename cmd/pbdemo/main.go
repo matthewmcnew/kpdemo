@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/matthewmcnew/build-service-visualization/buildpacks"
-	"github.com/matthewmcnew/build-service-visualization/logs"
-	"github.com/matthewmcnew/build-service-visualization/populate"
-	"github.com/matthewmcnew/build-service-visualization/rebase"
-	"github.com/matthewmcnew/build-service-visualization/server"
+	"github.com/matthewmcnew/pbdemo/buildpacks"
+	"github.com/matthewmcnew/pbdemo/logs"
+	"github.com/matthewmcnew/pbdemo/populate"
+	"github.com/matthewmcnew/pbdemo/rebase"
+	"github.com/matthewmcnew/pbdemo/server"
 )
 
 var rootCmd = &cobra.Command{

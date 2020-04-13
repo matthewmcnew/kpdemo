@@ -12,8 +12,8 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/matthewmcnew/build-service-visualization/defaults"
-	"github.com/matthewmcnew/build-service-visualization/k8s"
+	"github.com/matthewmcnew/pbdemo/defaults"
+	"github.com/matthewmcnew/pbdemo/k8s"
 )
 
 func UpdateRunImage() error {
