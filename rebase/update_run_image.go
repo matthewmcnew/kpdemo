@@ -59,7 +59,7 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	fmt.Printf("Updated Run Image %s@%s\n", updatedImage)
+	fmt.Printf("Updated Run Image %s\n", updatedImage)
 
 	stack.Spec.RunImage.Image = updatedImage
 	_, err = client.ExperimentalV1alpha1().Stacks().Update(stack)
