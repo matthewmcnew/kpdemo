@@ -199,15 +199,15 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 		},
 		{
 			Git: &v1alpha1.Git{
-				URL:      "https://github.com/cloudfoundry/go-mod-cnb",
-				Revision: "master",
+				URL:      "https://github.com/paketo-buildpacks/nginx",
+				Revision: "85f4a1e8ec3ae774ade1bfae3a886b6ae7865303",
 			},
-			SubPath: "integration/testdata/vendored",
+			SubPath: "integration/testdata/simple_app",
 		},
 		{
 			Git: &v1alpha1.Git{
-				URL:      "https://github.com/cloudfoundry/dotnet-core-runtime-cnb",
-				Revision: "master",
+				URL:      "https://github.com/paketo-buildpacks/dotnet-core-runtime",
+				Revision: "9ff9b56e88bf674391b2609b4dadeea28599da6a",
 			},
 			SubPath: "integration/testdata/simple_app",
 		},
