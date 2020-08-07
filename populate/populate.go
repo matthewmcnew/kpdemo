@@ -226,6 +226,25 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 }
 
 func saveBuilder(client *versioned.Clientset, builder *expv1alpha1.CustomClusterBuilder) error {
+
+	var order []expv1alpha1.OrderEntry
+	for _, o := range builder.Spec.Order {
+		var group []expv1alpha1.BuildpackRef
+		for _, g := range o.Group {
+			group = append(group, expv1alpha1.BuildpackRef{
+				BuildpackInfo: expv1alpha1.BuildpackInfo{
+					Id: g.Id,
+				},
+				Optional: g.Optional,
+			})
+		}
+
+		order = append(order, expv1alpha1.OrderEntry{
+			Group: group,
+		})
+	}
+	builder.Spec.Order = order
+
 	existingBuilder, err := client.ExperimentalV1alpha1().CustomClusterBuilders().Get(defaults.BuilderName, metav1.GetOptions{})
 	if err != nil && !k8errors.IsNotFound(err) {
 		return err
