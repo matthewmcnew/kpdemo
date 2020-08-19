@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +30,7 @@ func Cleanup() error {
 		return err
 	}
 
-	images, err := client.BuildV1alpha1().Images(defaults.Namespace).List(metav1.ListOptions{})
+	images, err := client.KpackV1alpha1().Images(defaults.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func Cleanup() error {
 
 	for _, i := range images.Items {
 		deleteBackground := metav1.DeletePropagationBackground
-		err := client.BuildV1alpha1().Images(defaults.Namespace).Delete(i.Name, &metav1.DeleteOptions{
+		err := client.KpackV1alpha1().Images(defaults.Namespace).Delete(i.Name, &metav1.DeleteOptions{
 			PropagationPolicy: &deleteBackground,
 		})
 		if err != nil {
@@ -66,14 +66,14 @@ func Cleanup() error {
 }
 
 func deleteStack(client *versioned.Clientset) error {
-	stack, err := client.ExperimentalV1alpha1().Stacks().Get(defaults.StackName, metav1.GetOptions{})
+	stack, err := client.KpackV1alpha1().ClusterStacks().Get(defaults.StackName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	oldSpec, ok := stack.Annotations[defaults.OldSpecAnnotation]
 	if ok {
-		stackSpec := expv1alpha1.StackSpec{}
+		stackSpec := v1alpha1.ClusterStackSpec{}
 		err := json.Unmarshal([]byte(oldSpec), &stackSpec)
 		if err != nil {
 			return err
@@ -81,22 +81,22 @@ func deleteStack(client *versioned.Clientset) error {
 		delete(stack.Annotations, defaults.OldSpecAnnotation)
 		stack.Spec = stackSpec
 
-		_, err = client.ExperimentalV1alpha1().Stacks().Update(stack)
+		_, err = client.KpackV1alpha1().ClusterStacks().Update(stack)
 	} else {
-		err = client.ExperimentalV1alpha1().Stacks().Delete(defaults.StackName, &metav1.DeleteOptions{})
+		err = client.KpackV1alpha1().ClusterStacks().Delete(defaults.StackName, &metav1.DeleteOptions{})
 	}
 	return err
 }
 
 func deleteStore(client *versioned.Clientset) error {
-	store, err := client.ExperimentalV1alpha1().Stores().Get(defaults.StoreName, metav1.GetOptions{})
+	store, err := client.KpackV1alpha1().ClusterStores().Get(defaults.StoreName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	oldSpec, ok := store.Annotations[defaults.OldSpecAnnotation]
 	if ok {
-		storeSpec := expv1alpha1.StoreSpec{}
+		storeSpec := v1alpha1.ClusterStoreSpec{}
 		err := json.Unmarshal([]byte(oldSpec), &storeSpec)
 		if err != nil {
 			return err
@@ -104,22 +104,22 @@ func deleteStore(client *versioned.Clientset) error {
 		delete(store.Annotations, defaults.OldSpecAnnotation)
 		store.Spec = storeSpec
 
-		_, err = client.ExperimentalV1alpha1().Stores().Update(store)
+		_, err = client.KpackV1alpha1().ClusterStores().Update(store)
 	} else {
-		err = client.ExperimentalV1alpha1().Stores().Delete(defaults.StoreName, &metav1.DeleteOptions{})
+		err = client.KpackV1alpha1().ClusterStores().Delete(defaults.StoreName, &metav1.DeleteOptions{})
 	}
 	return err
 }
 
 func deleteBuilder(client *versioned.Clientset) error {
-	builder, err := client.ExperimentalV1alpha1().CustomClusterBuilders().Get(defaults.BuilderName, metav1.GetOptions{})
+	builder, err := client.KpackV1alpha1().ClusterBuilders().Get(defaults.ClusterBuilderName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	oldSpec, ok := builder.Annotations[defaults.OldSpecAnnotation]
 	if ok {
-		builderSpec := expv1alpha1.CustomClusterBuilderSpec{}
+		builderSpec := v1alpha1.ClusterBuilderSpec{}
 		err := json.Unmarshal([]byte(oldSpec), &builderSpec)
 		if err != nil {
 			return err
@@ -127,9 +127,9 @@ func deleteBuilder(client *versioned.Clientset) error {
 		delete(builder.Annotations, defaults.OldSpecAnnotation)
 		builder.Spec = builderSpec
 
-		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Update(builder)
+		_, err = client.KpackV1alpha1().ClusterBuilders().Update(builder)
 	} else {
-		err = client.ExperimentalV1alpha1().CustomClusterBuilders().Delete(defaults.BuilderName, &metav1.DeleteOptions{})
+		err = client.KpackV1alpha1().ClusterBuilders().Delete(defaults.ClusterBuilderName, &metav1.DeleteOptions{})
 	}
 	return err
 }

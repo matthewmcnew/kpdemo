@@ -11,7 +11,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/goombaio/namegenerator"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -24,7 +23,7 @@ import (
 	"github.com/matthewmcnew/pbdemo/k8s"
 )
 
-func Populate(count int32, order expv1alpha1.Order, imageTag, cacheSize string) error {
+func Populate(count int32, order v1alpha1.Order, imageTag, cacheSize string) error {
 	clusterConfig, err := k8s.BuildConfigFromFlags("", "")
 	if err != nil {
 		return errors.Wrapf(err, "building kubeconfig")
@@ -85,15 +84,21 @@ func Populate(count int32, order expv1alpha1.Order, imageTag, cacheSize string) 
 		return err
 	}
 
-	err = saveBuilder(client, &expv1alpha1.CustomClusterBuilder{
+	err = saveBuilder(client, &v1alpha1.ClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: defaults.BuilderName,
+			Name: defaults.ClusterBuilderName,
 		},
-		Spec: expv1alpha1.CustomClusterBuilderSpec{
-			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-				Tag:   fmt.Sprintf("%s:%s", c.imageTag, "builder"),
-				Stack: defaults.StackName,
-				Store: defaults.StoreName,
+		Spec: v1alpha1.ClusterBuilderSpec{
+			BuilderSpec: v1alpha1.BuilderSpec{
+				Tag: fmt.Sprintf("%s:%s", c.imageTag, "builder"),
+				Stack: v1.ObjectReference{
+					Name: defaults.StackName,
+					Kind: "ClusterStack",
+				},
+				Store: v1.ObjectReference{
+					Name: defaults.StoreName,
+					Kind: "ClusterStore",
+				},
 				Order: order,
 			},
 			ServiceAccountRef: v1.ObjectReference{
@@ -114,15 +119,15 @@ func Populate(count int32, order expv1alpha1.Order, imageTag, cacheSize string) 
 	nameGenerator := namegenerator.NewNameGenerator(time.Now().UTC().UnixNano())
 	for i := 1; i <= c.count; i++ {
 		sourceConfig, tag := randomSourceConfig()
-		image, err := client.BuildV1alpha1().Images(defaults.Namespace).Create(&v1alpha1.Image{
+		image, err := client.KpackV1alpha1().Images(defaults.Namespace).Create(&v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nameGenerator.Generate(),
 			},
 			Spec: v1alpha1.ImageSpec{
 				Tag: fmt.Sprintf("%s:%s", c.imageTag, tag),
 				Builder: v1.ObjectReference{
-					Name: defaults.BuilderName,
-					Kind: "CustomClusterBuilder",
+					Name: defaults.ClusterBuilderName,
+					Kind: "ClusterBuilder",
 				},
 				ServiceAccount:       serviceAccount.Name,
 				Source:               sourceConfig,
@@ -225,32 +230,32 @@ func randomSourceConfig() (v1alpha1.SourceConfig, string) {
 	return sourceConfigs[randomIndex], imageTypes[randomIndex]
 }
 
-func saveBuilder(client *versioned.Clientset, builder *expv1alpha1.CustomClusterBuilder) error {
+func saveBuilder(client *versioned.Clientset, builder *v1alpha1.ClusterBuilder) error {
 
-	var order []expv1alpha1.OrderEntry
+	var order []v1alpha1.OrderEntry
 	for _, o := range builder.Spec.Order {
-		var group []expv1alpha1.BuildpackRef
+		var group []v1alpha1.BuildpackRef
 		for _, g := range o.Group {
-			group = append(group, expv1alpha1.BuildpackRef{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
+			group = append(group, v1alpha1.BuildpackRef{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id: g.Id,
 				},
 				Optional: g.Optional,
 			})
 		}
 
-		order = append(order, expv1alpha1.OrderEntry{
+		order = append(order, v1alpha1.OrderEntry{
 			Group: group,
 		})
 	}
 	builder.Spec.Order = order
 
-	existingBuilder, err := client.ExperimentalV1alpha1().CustomClusterBuilders().Get(defaults.BuilderName, metav1.GetOptions{})
+	existingBuilder, err := client.KpackV1alpha1().ClusterBuilders().Get(defaults.ClusterBuilderName, metav1.GetOptions{})
 	if err != nil && !k8errors.IsNotFound(err) {
 		return err
 	}
 	if k8errors.IsNotFound(err) {
-		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Create(builder)
+		_, err = client.KpackV1alpha1().ClusterBuilders().Create(builder)
 	} else {
 		oldSpec, err := json.Marshal(existingBuilder.Spec)
 		if err != nil {
@@ -263,7 +268,7 @@ func saveBuilder(client *versioned.Clientset, builder *expv1alpha1.CustomCluster
 
 		existingBuilder.Annotations[defaults.OldSpecAnnotation] = string(oldSpec)
 		existingBuilder.Spec = builder.Spec
-		_, err = client.ExperimentalV1alpha1().CustomClusterBuilders().Update(existingBuilder)
+		_, err = client.KpackV1alpha1().ClusterBuilders().Update(existingBuilder)
 	}
 	return err
 }

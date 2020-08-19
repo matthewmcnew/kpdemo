@@ -7,7 +7,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +27,7 @@ func UpdateBuildpack(id string) error {
 		return err
 	}
 
-	builder, err := client.ExperimentalV1alpha1().CustomClusterBuilders().Get(defaults.BuilderName, metav1.GetOptions{})
+	builder, err := client.KpackV1alpha1().ClusterBuilders().Get(defaults.ClusterBuilderName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func UpdateBuildpack(id string) error {
 		return fmt.Errorf("%s is not in builder order definition use a buildpack in order:\n\n%s", id, prettyPrint(builder.Spec.Order))
 	}
 
-	store, err := client.ExperimentalV1alpha1().Stores().Get(defaults.StoreName, metav1.GetOptions{})
+	store, err := client.KpackV1alpha1().ClusterStores().Get(defaults.StoreName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -67,11 +67,11 @@ func UpdateBuildpack(id string) error {
 	fmt.Printf("wrote to %s \n", newBp)
 
 	store.Spec.Sources = append(store.Spec.Sources, v1alpha1.StoreImage{Image: newBp})
-	_, err = client.ExperimentalV1alpha1().Stores().Update(store)
+	_, err = client.KpackV1alpha1().ClusterStores().Update(store)
 	return err
 }
 
-func isInBuilder(builder *v1alpha1.CustomClusterBuilder, id string) bool {
+func isInBuilder(builder *v1alpha1.ClusterBuilder, id string) bool {
 	for _, oe := range builder.Spec.Order {
 		for _, bp := range oe.Group {
 			if bp.Id == id {
