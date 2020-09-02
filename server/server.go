@@ -28,8 +28,8 @@ func Serve(port string) {
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, 10*time.Hour)
-	imageInformer := informerFactory.Build().V1alpha1().Images()
-	buildInformer := informerFactory.Build().V1alpha1().Builds()
+	imageInformer := informerFactory.Kpack().V1alpha1().Images()
+	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
 
 	imageLister := imageInformer.Lister()
 	buildLister := buildInformer.Lister()

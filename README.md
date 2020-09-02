@@ -13,7 +13,7 @@ A tool to visualize and demo [kpack](https://github.com/pivotal/kpack).
 ## Get Started
 
 1. Download the newest [release](https://github.com/matthewmcnew/pbdemo/releases)
-2. Run `pbdemo serve` to get an visualization of the images inside of a kpack cluster.   
+2. Run `pbdemo serve` to get a visualization of the images inside of a kpack cluster.   
 
 ### Demos
 

@@ -30,7 +30,7 @@ func Logs(name string) error {
 		return errors.Wrapf(err, "building kubeconfig")
 	}
 
-	list, err := client.BuildV1alpha1().Images("").List(v1.ListOptions{})
+	list, err := client.KpackV1alpha1().Images("").List(v1.ListOptions{})
 	if err != nil {
 		return err
 	}

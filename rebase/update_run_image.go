@@ -27,7 +27,7 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	stack, err := client.ExperimentalV1alpha1().Stacks().Get(defaults.StackName, metav1.GetOptions{})
+	stack, err := client.KpackV1alpha1().ClusterStacks().Get(defaults.StackName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func UpdateRunImage() error {
 	fmt.Printf("Updated Run Image %s\n", updatedImage)
 
 	stack.Spec.RunImage.Image = updatedImage
-	_, err = client.ExperimentalV1alpha1().Stacks().Update(stack)
+	_, err = client.KpackV1alpha1().ClusterStacks().Update(stack)
 	return err
 }
 
