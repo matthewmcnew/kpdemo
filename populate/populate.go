@@ -57,7 +57,7 @@ func Populate(count int32, order v1alpha1.Order, imageTag, cacheSize string) err
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "pbdemo-dockersecret-",
 			Annotations: map[string]string{
-				"build.pivotal.io/docker": c.registry,
+				"kpack.io/docker": c.registry,
 			},
 		},
 		StringData: map[string]string{
