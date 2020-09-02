@@ -2,8 +2,8 @@ package defaults
 
 const (
 	ClusterBuilderName = "default"
-	StackName          = "build-service-stack"
-	StoreName          = "build-service-store"
+	StackName          = "default"
+	StoreName          = "default"
 	Namespace          = "demo-project"
 	OldSpecAnnotation  = "pbdemo/old-spec"
 )
