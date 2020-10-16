@@ -5,4 +5,4 @@ popd
 
 statik -src=ui/build
 
-go build -o pbdemo cmd/pbdemo/main.go
+go build -o kpdemo cmd/kpdemo/main.go

@@ -11,9 +11,9 @@ import (
 	"github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/rakyll/statik/fs"
 
-	"github.com/matthewmcnew/pbdemo/images"
-	"github.com/matthewmcnew/pbdemo/k8s"
-	_ "github.com/matthewmcnew/pbdemo/statik"
+	"github.com/matthewmcnew/kpdemo/images"
+	"github.com/matthewmcnew/kpdemo/k8s"
+	_ "github.com/matthewmcnew/kpdemo/statik"
 )
 
 func Serve(port string) {

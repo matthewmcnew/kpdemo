@@ -12,8 +12,8 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/matthewmcnew/pbdemo/defaults"
-	"github.com/matthewmcnew/pbdemo/k8s"
+	"github.com/matthewmcnew/kpdemo/defaults"
+	"github.com/matthewmcnew/kpdemo/k8s"
 )
 
 func UpdateRunImage() error {
@@ -49,7 +49,7 @@ func UpdateRunImage() error {
 		return err
 	}
 
-	i, err = imagehelpers.SetStringLabel(i, "PBDEMO_DEMO", time.Now().String())
+	i, err = imagehelpers.SetStringLabel(i, "KPDEMO_DEMO", time.Now().String())
 	if err != nil {
 		return err
 	}

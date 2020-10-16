@@ -19,8 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/matthewmcnew/pbdemo/defaults"
-	"github.com/matthewmcnew/pbdemo/k8s"
+	"github.com/matthewmcnew/kpdemo/defaults"
+	"github.com/matthewmcnew/kpdemo/k8s"
 )
 
 func Populate(count int32, order v1alpha1.Order, imageTag, cacheSize string) error {
@@ -55,7 +55,7 @@ func Populate(count int32, order v1alpha1.Order, imageTag, cacheSize string) err
 
 	secret, err := k8sclient.CoreV1().Secrets(defaults.Namespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "pbdemo-dockersecret-",
+			GenerateName: "kpdemo-dockersecret-",
 			Annotations: map[string]string{
 				"kpack.io/docker": c.registry,
 			},
@@ -72,7 +72,7 @@ func Populate(count int32, order v1alpha1.Order, imageTag, cacheSize string) err
 
 	serviceAccount, err := k8sclient.CoreV1().ServiceAccounts(defaults.Namespace).Create(&v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "pbdemo-serviceaccount-",
+			GenerateName: "kpdemo-serviceaccount-",
 		},
 		Secrets: []v1.ObjectReference{
 			{

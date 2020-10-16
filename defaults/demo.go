@@ -5,5 +5,5 @@ const (
 	StackName          = "default"
 	StoreName          = "default"
 	Namespace          = "demo-project"
-	OldSpecAnnotation  = "pbdemo/old-spec"
+	OldSpecAnnotation  = "kpdemo/old-spec"
 )

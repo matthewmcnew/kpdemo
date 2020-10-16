@@ -1,4 +1,4 @@
-module github.com/matthewmcnew/pbdemo
+module github.com/matthewmcnew/kpdemo
 
 go 1.13
 

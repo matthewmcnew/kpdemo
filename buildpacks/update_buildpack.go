@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/matthewmcnew/pbdemo/defaults"
-	"github.com/matthewmcnew/pbdemo/k8s"
+	"github.com/matthewmcnew/kpdemo/defaults"
+	"github.com/matthewmcnew/kpdemo/k8s"
 )
 
 func UpdateBuildpack(id string) error {

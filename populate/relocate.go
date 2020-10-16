@@ -16,8 +16,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/matthewmcnew/pbdemo/defaults"
-	"github.com/matthewmcnew/pbdemo/k8s"
+	"github.com/matthewmcnew/kpdemo/defaults"
+	"github.com/matthewmcnew/kpdemo/k8s"
 )
 
 const (
@@ -67,13 +67,13 @@ func Relocate(imageTag string) (Relocated, error) {
 	}
 
 	if !verifyRegistryPublic(k8sClient, runImage) {
-		fmt.Printf("\n%s: Image: %s is not public. \n pbdemo populate will not work if %s is not public or readable by kpack and the nodes on the cluster\n Continuing anyway...\n\n",
+		fmt.Printf("\n%s: Image: %s is not public. \n kpdemo populate will not work if %s is not public or readable by kpack and the nodes on the cluster\n Continuing anyway...\n\n",
 			color.RedString("WARNING"),
 			imageTag,
 			imageTag)
 	}
 
-	builderRef, err := name.ParseReference("gcr.io/paketo-buildpacks/builder:base")
+	builderRef, err := name.ParseReference("paketobuildpacks/builder:base")
 	if err != nil {
 		return Relocated{}, err
 	}

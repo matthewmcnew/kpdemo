@@ -43,5 +43,5 @@ kubectl apply -f https://storage.googleapis.com/beam-releases/out.yaml
 ### Demo:
 
 ```bash
-pbdemo populate --registry registry.default.svc.cluster.local:5000/please --count 15
+kpdemo populate --registry registry.default.svc.cluster.local:5000/please --count 15
 ```
