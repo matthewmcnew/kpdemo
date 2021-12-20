@@ -77,10 +77,10 @@ A tool to visualize and demo [kpack](https://github.com/pivotal/kpack).
      
 1. Push an Updated Backpack 
     
-    The `kpdemo update-buildpacks --buildpack <buildpack>` will create a new buildpack and add it to the kpack buildpack store. Kpack will rebuild "out-of-date" images with the new buildpack.
+    The `kpdemo update-buildpack --buildpack <buildpack>` will create a new buildpack and add it to the kpack buildpack store. Kpack will rebuild "out-of-date" images with the new buildpack.
     
     ```
-    kpdemo update-buildpacks --buildpack <buildpack.id>
+    kpdemo update-buildpack --buildpack <buildpack.id>
     ```
    
 
